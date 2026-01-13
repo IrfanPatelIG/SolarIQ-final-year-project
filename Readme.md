@@ -1,7 +1,7 @@
 # Hi, SolarIQ is a Smart Solar Energy Prediction system
 
 ## Developed by:
-1 Irfaan Patel
+1 Irfaan Patel <br>
 2 Abrar Khatri
 3 Atharv Sawant
 4 Mohseen Hawaldar
