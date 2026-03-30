@@ -1,0 +1,25 @@
+/* Google Fonts must be first */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap");
+
+/* Then import Tailwind */
+@import "tailwindcss";
+
+/* Your custom styles */
+body {
+  font-family: "Poppins", sans-serif;
+  color: white;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.7);
+  }
+}
+
+.glow {
+  animation: glow 2s infinite alternate;
+}
