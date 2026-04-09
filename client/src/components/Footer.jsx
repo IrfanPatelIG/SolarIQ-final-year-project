@@ -18,34 +18,10 @@ const Footer = () => {
             FAQ
           </a>
           <a href="#" className="hover:underline">
-            Help Centre
-          </a>
-          <a href="#" className="hover:underline">
             Account
           </a>
           <a href="#" className="hover:underline">
-            Media Centre
-          </a>
-          <a href="#" className="hover:underline">
-            Investor Relations
-          </a>
-          <a href="#" className="hover:underline">
-            Jobs
-          </a>
-          <a href="#" className="hover:underline">
-            Ways to Watch
-          </a>
-          <a href="#" className="hover:underline">
-            Terms of Use
-          </a>
-          <a href="#" className="hover:underline">
-            Privacy
-          </a>
-          <a href="#" className="hover:underline">
-            Cookie Preferences
-          </a>
-          <a href="#" className="hover:underline">
-            Corporate Information
+            Privacy & Policy
           </a>
           <a href="#" className="hover:underline">
             Contact Us

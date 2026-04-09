@@ -20,10 +20,10 @@ const HeroSection = () => {
 
       {/* Foreground content */}
       <div className="relative z-10 text-center">
-        <h1 className="mt-15 font-bold lg:text-8xl text-5xl mb-4">
-          Welcome to SolarIQ
+        <h1 className="mt-15 font-bold lg:text-7xl text-5xl mb-4">
+          SolarIQ
         </h1>
-        <p className="font-bold text-lg text-grey">
+        <p className="font-bold text-[16px] text-grey">
           Empowering innovation through Insights and Predictions
         </p>
         <div className="mt-15 flex flex-col sm:flex-row items-center justify-center gap-4">
