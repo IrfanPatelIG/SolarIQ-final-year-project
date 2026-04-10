@@ -1,6 +1,6 @@
 import { calculateSolar } from "../services/solarService.js";
-import Location from "../models/locationModel.js";
 import axios from "axios";
+import { Location, Panel, Weather, Forecast } from "../models/index.js";
 
 export const getSolarData = async (req, res) => {
   try {
@@ -45,7 +45,7 @@ export const getSolarData = async (req, res) => {
     const state = geoData?.state || null;
     const country = geoData?.country || null;
 
-    // ⏱️ TIMEZONE (from another API)
+    // 🌦 1) Fetch weather data
     const weatherRes = await axios.get(
       `https://api.openweathermap.org/data/2.5/weather`,
       {
@@ -57,9 +57,10 @@ export const getSolarData = async (req, res) => {
       }
     );
 
+    // ⏱️ TIMEZONE (from weather API)
     const timezone = weatherRes.data?.timezone || null;
 
-    // ✅ SAVE LOCATION WITH FULL DATA
+    // 💾 2) SAVE LOCATION (FULL DATA)
     const savedLocation = await Location.create({
       latitude: lat,
       longitude: lon,
@@ -71,15 +72,83 @@ export const getSolarData = async (req, res) => {
 
     console.log("✅ Location saved:", savedLocation.toJSON());
 
-    // ✅ EXISTING LOGIC (UNCHANGED)
+    // ⚡* Calculate irradiance
+    const w = weatherRes.data;
+
+    const cloud = w.clouds?.all || 0;
+    const solar_irradiance = 1000 * (1 - cloud / 100);
+
+    // 💾 3) Save Weather
+    const savedWeather = await Weather.create({
+      location_id: savedLocation.location_id,
+      temperature: w.main.temp,
+      humidity: w.main.humidity,
+      solar_irradiance,
+      cloud_cover: cloud,
+      wind_speed: w.wind.speed,
+      precipitation: w.rain?.["1h"] || 0,
+      air_pressure: w.main.pressure,
+      recorded_at: new Date(),
+    });
+
+    console.log("✅ Weather saved:", savedWeather.toJSON());
+
+    // 💾 4) SAVE PANEL (linked)
+    const savedPanel = await Panel.create({
+      area: panel.area,
+      tilt: panel.tilt,
+      orientation: panel.orientation,
+      installation_date: null, // optional for now
+      location_id: savedLocation.location_id,
+    });
+
+    console.log("✅ Panel saved:", savedPanel.toJSON());
+
+
+    // ⚡5) Solar calculation from solarService.js (ML Output)
     const result = await calculateSolar({ location, panel, dates });
 
-    // ✅ RESPONSE
+
+    // 📅 6) SAVING FORECAST DATA | Generate date range
+    const start = new Date(dates.startDate);
+    const end = new Date(dates.endDate);
+
+    let currentDate = new Date(start);
+
+    const forecasts = [];
+
+    while (currentDate <= end) {
+      forecasts.push({
+        forecast_date: new Date(currentDate),
+        predicted_energy_kwh: result.dailyEnergy,
+        location_id: savedLocation.location_id,
+        panel_id: savedPanel.panel_id,
+        model_version: "v1",
+      });
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // console.log("All forecasted energy values (kWh):");
+    // forecasts.forEach((forecast, index) => {
+    //   console.log(`Day ${index + 1}: ${forecast.predicted_energy_kwh} kWh`);
+    // });
+
+    // 💾 Bulk insert
+    await Forecast.bulkCreate(forecasts);
+
+    console.log("✅ Forecast data saved");
+
+    // ✅ 7) RESPONSE
     res.json({
       success: true,
       message: "Data processed successfully",
-      location: savedLocation,
       data: result,
+      db: {
+        location: savedLocation, 
+        Weather: savedWeather,
+        panel: savedPanel
+      }
     });
 
   } catch (error) {

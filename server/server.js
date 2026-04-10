@@ -13,19 +13,20 @@ dotenv.config();
 // Connecting to DB
 await connectDB();
 
-// 
+// Synchronizing Tables in DB
 await sequelize.sync({ alter: true })
   .then(() => console.log("✅ Tables synced"))
   .catch(err => console.error("❌ Sync error:", err));
+
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// Actual Routes
 app.use("/api/solar", solarRoutes);
 
-// Backend check
+// Just for Backend Health-check
 app.get("/", (req, res) => {
   res.send("SolarIQ Backend Running 🚀");
 });
