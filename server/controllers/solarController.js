@@ -106,7 +106,14 @@ export const getSolarData = async (req, res) => {
 
 
     // ⚡5) Solar calculation from solarService.js (ML Output)
-    const result = await calculateSolar({ location, panel, dates });
+    const result = await calculateSolar({
+      location, 
+      panel, 
+      dates, 
+      weather: savedWeather
+    });
+      // Bcz all "location, panel & dates" are comming directly from API call from frontend, 
+      // But for weather we are fetching this at Backend itself therefor we specified this separately with "savedWeather"
 
 
     // 📅 6) SAVING FORECAST DATA | Generate date range
@@ -129,10 +136,10 @@ export const getSolarData = async (req, res) => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    // console.log("All forecasted energy values (kWh):");
-    // forecasts.forEach((forecast, index) => {
-    //   console.log(`Day ${index + 1}: ${forecast.predicted_energy_kwh} kWh`);
-    // });
+    console.log("All forecasted energy values (kWh):");
+    forecasts.forEach((forecast, index) => {
+      console.log(`Day ${index + 1}: ${forecast.predicted_energy_kwh} kWh`);
+    });
 
     // 💾 Bulk insert
     await Forecast.bulkCreate(forecasts);
