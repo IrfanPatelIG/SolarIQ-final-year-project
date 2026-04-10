@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import solarRoutes from "./routes/solarRoutes.js";
 import { connectDB } from "./config/db.js";
 import sequelize from "./config/db.js";
-import "./models/LocationModel.js";
+import "./models/locationModel.js";
 
 const app = express();
 const PORT = 5000;
