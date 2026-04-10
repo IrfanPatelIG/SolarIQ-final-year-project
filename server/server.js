@@ -1,9 +1,15 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import solarRoutes from "./routes/solarRoutes.js";
+import { connectDB } from "./config/db.js";
 
 const app = express();
 const PORT = 5000;
+dotenv.config();
+
+// Connecting to DB
+await connectDB();
 
 // Middleware
 app.use(cors());
