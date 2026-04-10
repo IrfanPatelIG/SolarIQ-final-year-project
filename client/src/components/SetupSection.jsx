@@ -7,8 +7,6 @@ const SetupSection = () => {
   const [locationType, setLocationType] = useState("city");
   const [city, setCity] = useState("");
   const [coords, setCoords] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const [panelArea, setPanelArea] = useState("");
   const [tilt, setTilt] = useState("");
@@ -17,188 +15,162 @@ const SetupSection = () => {
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
 
+  const [error, setError] = useState("");
+
+  // ✅ Separate loading states
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+
   const API_KEY = "9da522f9ac3a0a2b291ca43e482549bd";
 
-  // 🔥 EXISTING: City Search (UNCHANGED)
+  // 🔍 CITY SEARCH
   const handleCitySearch = async () => {
-    if (!city) {
-      setError("Please enter a city name.");
-      return;
-    }
+    if (!city) return setError("Enter city name");
 
-    setLoading(true);
+    setSearchLoading(true);
     setError("");
-    setCoords(null);
 
     try {
-      const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`,
+      const res = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`
       );
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!Array.isArray(data) || data.length === 0) {
-        setError("City not found. Try another name.");
+      if (!data.length) {
+        setError("City not found");
       } else {
-        console.log("Data: ", data)
         const { lat, lon, name, country } = data[0];
         setCoords({ lat, lon, name, country });
       }
-    } catch (err) {
-      setError("Failed to fetch location data. Please try again.");
+    } catch {
+      setError("Error fetching city");
     }
 
-    setLoading(false);
+    setSearchLoading(false);
   };
 
-  // 🔥 NEW: CURRENT LOCATION FUNCTION
-  const handleUseCurrentLocation = async () => {
+  // 📍 CURRENT LOCATION
+  const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setError("Geolocation not supported.");
-      return;
+      return setError("Geolocation not supported");
     }
 
-    setLoading(true);
+    setLocationLoading(true);
     setError("");
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
 
-        fetch(`http://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`)
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            if (Array.isArray(data) && data.length > 0) {
-              console.log("DATA: ", data)
-              const {name, country} = data[0];
-              setCity(name);
-              setCoords({
-                lat: latitude,
-                lon: longitude,
-                name: name,
-                country: country
-              });
-            }
-          })
-          .catch(error => {
-            console.error('Error fetching location name:', error);
+        try {
+          const res = await fetch(
+            `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`
+          );
+          const data = await res.json();
+
+          if (data.length > 0) {
+            const { name, country } = data[0];
+
+            setCoords({
+              lat: latitude,
+              lon: longitude,
+              name,
+              country,
+            });
+
+            setCity(name);
+          }
+        } catch {
+          setCoords({
+            lat: latitude,
+            lon: longitude,
+            name: "Current Location",
           });
-        
-        setCoords({
-          lat: latitude,
-          lon: longitude,
-          name: "Current Location",
-          country: "",
-        });
+        }
 
-        // optional: fill manual inputs
         setLat(latitude);
         setLon(longitude);
+        setLocationType("city");
 
-        setLocationType("city"); // important
-        setLoading(false);
+        setLocationLoading(false);
       },
-      (err) => {
-        setError("Location permission denied or failed.");
-        setLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0,
-      },
+      () => {
+        setError("Location permission denied");
+        setLocationLoading(false);
+      }
     );
   };
 
-  const todayISO = (() => {
-    const d = new Date();
-    const tzOffset = d.getTimezoneOffset() * 60000;
-    return new Date(d - tzOffset).toISOString().slice(0, 10);
-  })();
+  // 📅 DATE LOGIC
+  const todayISO = new Date().toISOString().split("T")[0];
 
   const [startDate, setStartDate] = useState(todayISO);
-  const [endDate, setEndDate] = useState(() => {
-    const d = new Date(todayISO);
-    d.setDate(d.getDate() + 6);
-    return d.toISOString().slice(0, 10);
-  });
+  const [endDate, setEndDate] = useState(todayISO);
 
   useEffect(() => {
-    if (!startDate) return;
     const d = new Date(startDate);
     d.setDate(d.getDate() + 6);
-    const tzOffset = d.getTimezoneOffset() * 60000;
-    setEndDate(new Date(d - tzOffset).toISOString().slice(0, 10));
+    setEndDate(d.toISOString().split("T")[0]);
   }, [startDate]);
 
-  const minStartDate = todayISO;
-
-  const handleSubmit = async () => {
-    let finalCoords;
-
-    if (locationType === "city") {
-      if (!coords) return setError("Please search a city first.");
-      finalCoords = { lat: coords.lat, lon: coords.lon };
-    } else {
-      if (!lat || !lon) return setError("Enter coordinates.");
-      finalCoords = { lat, lon };
+  // 🚀 SUBMIT
+  const handleSubmit = () => {
+    if (!coords && (!lat || !lon)) {
+      return setError("Select a location first");
     }
 
+    if (!panelArea || !tilt || !orientation) {
+      return setError("Complete panel configuration");
+    }
+
+    setSubmitLoading(true);
+
     const payload = {
-      location: finalCoords,
-      panel: {
-        area: panelArea,
-        tilt,
-        orientation,
-      },
-      dates: {
-        startDate,
-        endDate,
-      },
+      location: coords || { lat, lon },
+      panel: { area: panelArea, tilt, orientation },
+      dates: { startDate, endDate },
     };
 
-    const res = await fetch("http://localhost:5000/api/solar/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    console.log("Payload:", payload);
 
-    const data = await res.json();
-    console.log(data);
+    setTimeout(() => {
+      localStorage.setItem("solarData", JSON.stringify(payload));
+      window.location.href = "/dashboard";
+    }, 1200);
   };
 
   return (
-    <section className=" w-full min-h-screen bg-gray-900 text-white flex flex-col items-center py-16 px-4">
+    <section className="w-full min-h-screen bg-[#0f172a] text-white flex flex-col items-center py-16 px-4">
+
+      {/* HEADER */}
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold mb-2">Setup Your Solar Forecast</h2>
-        <p className="text-gray-300 max-w-xl mx-auto">
-          Enter your details below to generate an accurate solar energy
-          prediction for your chosen location.
+        <h2 className="text-4xl font-bold">
+          Setup Your Solar Forecast ⚡
+        </h2>
+        <p className="text-gray-300 mt-3 max-w-xl">
+          Configure your system and generate accurate solar insights.
         </p>
       </div>
 
+      {/* CARDS */}
       <div className="flex flex-col gap-8 w-full max-w-3xl">
+
         <LocationCard
           locationType={locationType}
           setLocationType={setLocationType}
           city={city}
           setCity={setCity}
           coords={coords}
-          loading={loading}
           error={error}
           handleCitySearch={handleCitySearch}
-          handleUseCurrentLocation={handleUseCurrentLocation} // ✅ ADDED
+          handleUseCurrentLocation={handleUseCurrentLocation}
           lat={lat}
           setLat={setLat}
           lon={lon}
           setLon={setLon}
+          searchLoading={searchLoading}
+          locationLoading={locationLoading}
         />
 
         <PanelCard
@@ -214,16 +186,29 @@ const SetupSection = () => {
           startDate={startDate}
           setStartDate={setStartDate}
           endDate={endDate}
-          minStartDate={minStartDate}
+          minStartDate={todayISO}
         />
+
       </div>
 
+      {/* SMART PREVIEW */}
+      <div className="mt-8 bg-[#1E3A8A]/30 p-5 rounded-xl text-center w-full max-w-md">
+        <p className="text-sm text-gray-300">Estimated Output</p>
+        <h2 className="text-2xl font-bold text-[#FFC107]">
+          {panelArea ? (panelArea * 0.2).toFixed(2) : "0"} kWh/day ⚡
+        </h2>
+      </div>
+
+      {/* CTA */}
       <button
         onClick={handleSubmit}
-        className="mt-10 px-8 py-3 bg-cyan-600 hover:bg-cyan-700 rounded-full font-semibold transition"
+        disabled={submitLoading}
+        className="mt-10 px-10 py-3 bg-[#FFC107] text-black rounded-full font-semibold text-lg"
       >
-        Submit
+        {submitLoading ? "Analyzing..." : "Generate Insights →"}
       </button>
+
+      {error && <p className="text-red-400 mt-4">{error}</p>}
     </section>
   );
 };

@@ -1,18 +1,41 @@
+import { Routes, Route } from "react-router-dom";
+
 import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
 import SetupSection from "./components/SetupSection";
-import Footer from "./components/Footer";
 import DemoGraphsPage from "./components/DemoG";
+import Footer from "./components/Footer";
 
-const App = () => {
+import Dashboard from "./pages/Dashboard";
+
+const Home = () => {
   return (
     <>
-      <Navbar />
       <HeroSection />
       <SetupSection />
       <DemoGraphsPage />
-      <Footer />
     </>
+  );
+};
+
+const App = () => {
+  return (
+    <Routes>
+      {/* Public Pages */}
+      <Route
+        path="/"
+        element={
+          <>
+            <Navbar />
+            <Home />
+            <Footer />
+          </>
+        }
+      />
+
+      {/* Dashboard (No Navbar/Footer) */}
+      <Route path="/dashboard" element={<Dashboard />} />
+    </Routes>
   );
 };
 

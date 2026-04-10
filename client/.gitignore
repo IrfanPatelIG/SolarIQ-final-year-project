@@ -1,0 +1,64 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# production
+/build
+/dist
+
+# misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+
+# coverage
+/coverage
+
+# cache
+.cache/
+.parcel-cache/
+.next/
+.out/
+
+# vite specific
+vite.svg
+
+# tailwind
+# (usually no special ignores needed, but include build artifacts if any)
+*.log
+
+# optional lock files (keep ONE depending on your package manager)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# typescript
+*.tsbuildinfo
+
+# eslint cache
+.eslintcache
+
+# stylelint cache
+.stylelintcache
