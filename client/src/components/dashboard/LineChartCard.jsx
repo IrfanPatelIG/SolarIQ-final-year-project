@@ -4,27 +4,30 @@ import {
   XAxis,
   Tooltip,
   ResponsiveContainer,
+  YAxis,
 } from "recharts";
 import Card from "./Card";
 
-const data = [
-  { name: "Mon", value: 400 },
-  { name: "Tue", value: 600 },
-  { name: "Wed", value: 800 },
-  { name: "Thu", value: 500 },
-  { name: "Fri", value: 900 },
+// ✅ Default fallback data (only if no props passed)
+const defaultData = [
+  { date: "Mon", energy: 12 },
+  { date: "Tue", energy: 15 },
+  { date: "Wed", energy: 10 },
+  { date: "Thu", energy: 18 },
+  { date: "Fri", energy: 20 },
 ];
 
-export default function LineChartCard() {
+export default function LineChartCard({ data = defaultData }) {
   return (
-    <Card title="Solar Output (kWh)">
+    <Card title="Daily Energy Trend (kWh)">
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={data}>
-          <XAxis dataKey="name" stroke="#9CA3AF" />
+          <XAxis dataKey="date" stroke="#9CA3AF" />
+          <YAxis />
           <Tooltip />
           <Line
             type="monotone"
-            dataKey="value"
+            dataKey="energy"
             stroke="#FACC15"
             strokeWidth={3}
             dot={false}

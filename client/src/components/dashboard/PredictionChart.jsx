@@ -1,34 +1,51 @@
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
+  YAxis,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 import Card from "./Card";
 
-const data = [
-  { name: "Now", value: 400 },
-  { name: "1h", value: 600 },
-  { name: "2h", value: 750 },
-  { name: "3h", value: 900 },
+// ✅ Default fallback data
+const defaultData = [
+  { date: "Mon", energy: 12, cloud: 30 },
+  { date: "Tue", energy: 15, cloud: 20 },
+  { date: "Wed", energy: 10, cloud: 60 },
+  { date: "Thu", energy: 18, cloud: 10 },
+  { date: "Fri", energy: 20, cloud: 5 },
 ];
 
-export default function PredictionChart() {
+export default function PredictionChart({ data = defaultData }) {
   return (
-    <Card title="Predicted Output">
+    <Card title="Weather Impact on Energy">
       <ResponsiveContainer width="100%" height={250}>
-        <AreaChart data={data}>
-          <XAxis dataKey="name" stroke="#9CA3AF" />
+        <LineChart data={data}>
+          <XAxis dataKey="date" stroke="#9CA3AF" />
+          <YAxis />
           <Tooltip />
-          <Area
+          <Legend />
+
+          {/* ⚡ Energy Line */}
+          <Line
             type="monotone"
-            dataKey="value"
+            dataKey="energy"
             stroke="#FACC15"
-            fill="#FACC15"
-            fillOpacity={0.2}
+            strokeWidth={3}
+            dot={false}
           />
-        </AreaChart>
+
+          {/* ☁️ Cloud Cover Line */}
+          <Line
+            type="monotone"
+            dataKey="cloud"
+            stroke="#60A5FA"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
       </ResponsiveContainer>
     </Card>
   );

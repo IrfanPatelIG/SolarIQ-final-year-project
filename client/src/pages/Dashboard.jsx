@@ -8,6 +8,7 @@ import PredictionChart from "../components/dashboard/PredictionChart";
 
 import Notifications from "../components/dashboard/Notifications";
 import Insights from "../components/dashboard/Insights";
+import PanelCard from "../components/dashboard/PanelCard";
 
 export default function Dashboard() {
   return (
@@ -29,10 +30,11 @@ export default function Dashboard() {
         </div>
 
         {/* 📊 CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <LineChartCard />
-          <BarChartCard />
-          <PredictionChart />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <LineChartCard />
+        <PredictionChart />
+        <BarChartCard />
+        <PanelCard/>
         </div>
 
         {/* 🔔 INSIGHTS + NOTIFICATIONS */}

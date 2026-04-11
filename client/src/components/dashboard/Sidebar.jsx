@@ -1,8 +1,18 @@
-import { useState } from "react";
-import { Menu, X, Home, LayoutDashboard, Bell, Lightbulb, Settings } from "lucide-react";
+import { useState, memo } from "react";
+import {
+  Menu,
+  X,
+  Home,
+  LayoutDashboard,
+  Bell,
+  Lightbulb,
+  Settings,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
+  const location = useLocation();
 
   return (
     <>
@@ -10,7 +20,7 @@ export default function Sidebar() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="flex items-center justify-center md:hidden fixed top-4 left-4 z-50 bg-[#111827] p-2 rounded-lg border border-[#1F2937]"
+          className="md:hidden fixed top-4 left-4 z-50 bg-[#111827] p-2 rounded-lg border border-[#1F2937]"
         >
           <Menu size={18} />
         </button>
@@ -34,52 +44,70 @@ export default function Sidebar() {
           ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        <div className="flex flex-col h-full p-3">
+        <div className="flex flex-col h-full px-3 py-4">
 
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-8">
+            <span className="text-yellow-400 font-bold text-lg whitespace-nowrap">
+              {open ? "SolarIQ ⚡" : "⚡"}
+            </span>
 
-            {/* Logo (keeps space even when closed) */}
-            <div className="flex items-center gap-2">
-              <span className="text-yellow-400 font-bold text-lg whitespace-nowrap">
-                {open ? "SolarIQ ⚡" : "⚡"}
-              </span>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex items-center gap-2">
-
-              {/* Desktop Toggle */}
-              <button
-                onClick={() => setOpen(!open)}
-                className="hidden md:block text-gray-400 hover:text-white"
-              >
-                <Menu size={18} />
-              </button>
-
-              {/* Mobile Close */}
-              <button
-                onClick={() => setOpen(false)}
-                className="md:hidden text-gray-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
-
-            </div>
+            <button
+              onClick={() => setOpen(!open)}
+              className="text-gray-400 hover:text-white"
+            >
+              {open ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
 
-          {/* Menu */}
+          {/* 🔥 PRIMARY NAV */}
           <nav className="flex flex-col gap-2">
-            <Item icon={<LayoutDashboard size={18} />} label="Dashboard" open={open} />
-            <Item icon={<Lightbulb size={18} />} label="Insights" open={open} />
-            <Item icon={<Bell size={18} />} label="Notifications" open={open} />
-            <Item icon={<Settings size={18} />} label="Setup" open={open} />
+            <Item
+              icon={<Home size={18} />}
+              label="Home"
+              open={open}
+              to="/"
+              active={location.pathname === "/"}
+            />
+
+            <Item
+              icon={<LayoutDashboard size={18} />}
+              label="Dashboard"
+              open={open}
+              to="/dashboard"
+              active={location.pathname === "/dashboard"}
+            />
           </nav>
 
-          {/* Bottom */}
-          <div className="mt-auto">
-            <Item icon={<Home size={18} />} label="Home" open={open} />
-          </div>
+          {/* Divider */}
+          <div className="my-6 border-t border-[#1F2937]" />
+
+          {/* 🔧 SECONDARY NAV */}
+          <nav className="flex flex-col gap-2">
+            <Item
+              icon={<Lightbulb size={18} />}
+              label="Insights"
+              open={open}
+              to="/insights"
+              active={location.pathname === "/insights"}
+            />
+
+            <Item
+              icon={<Bell size={18} />}
+              label="Notifications"
+              open={open}
+              to="/notifications"
+              active={location.pathname === "/notifications"}
+            />
+
+            <Item
+              icon={<Settings size={18} />}
+              label="Setup"
+              open={open}
+              to="/#setup"
+              active={location.pathname === "/#setup"}
+            />
+          </nav>
 
         </div>
       </aside>
@@ -87,25 +115,31 @@ export default function Sidebar() {
   );
 }
 
-function Item({ icon, label, open }) {
+const Item = memo(function Item({ icon, label, open, to, active }) {
   return (
-    <div
-      className="
-        flex items-center gap-3 p-3 rounded-lg cursor-pointer
-        hover:bg-[#1F2937] transition
-      "
+    <Link
+      to={to}
+      className={`
+        flex items-center gap-3 px-3 py-3 rounded-lg
+        transition-all duration-200
+        ${
+          active
+            ? "bg-yellow-400/10 text-yellow-400"
+            : "text-gray-300 hover:bg-[#1F2937]"
+        }
+      `}
     >
-      <div className="text-yellow-400">{icon}</div>
+      <div>{icon}</div>
 
       <span
         className={`
-          text-sm text-gray-300 whitespace-nowrap
+          text-sm whitespace-nowrap
           transition-all duration-200
           ${open ? "opacity-100 ml-1" : "opacity-0 w-0 overflow-hidden"}
         `}
       >
         {label}
       </span>
-    </div>
+    </Link>
   );
-}
+});

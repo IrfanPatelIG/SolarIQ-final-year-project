@@ -3,7 +3,6 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
 import SetupSection from "./components/SetupSection";
-import DemoGraphsPage from "./components/DemoG";
 import Footer from "./components/Footer";
 
 import Dashboard from "./pages/Dashboard";
@@ -13,7 +12,6 @@ const Home = () => {
     <>
       <HeroSection />
       <SetupSection />
-      <DemoGraphsPage />
     </>
   );
 };

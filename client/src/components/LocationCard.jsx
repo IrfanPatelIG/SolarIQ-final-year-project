@@ -15,7 +15,7 @@ const LocationCard = ({
   locationLoading,
 }) => {
   return (
-    <div className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl">
+    <div id="setup" className="bg-white/5 backdrop-blur-lg border border-white/10 p-6 rounded-2xl">
 
       <h3 className="text-xl font-semibold mb-4">Location</h3>
 
