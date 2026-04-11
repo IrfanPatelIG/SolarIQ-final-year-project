@@ -1,6 +1,9 @@
-import { calculateSolar } from "../services/solarService.js";
 import axios from "axios";
 import { Location, Panel, Weather, Forecast } from "../models/index.js";
+import {
+  calculateSolar,
+  getSeasonalFactor,
+} from "../services/solarService.js";
 
 export const getSolarData = async (req, res) => {
   try {
@@ -106,17 +109,18 @@ export const getSolarData = async (req, res) => {
 
 
     // ⚡5) Solar calculation from solarService.js (ML Output)
+    // ⚡ Base calculation
     const result = await calculateSolar({
-      location, 
-      panel, 
-      dates, 
-      weather: savedWeather
+      location,
+      panel,
+      weather: savedWeather,
     });
       // Bcz all "location, panel & dates" are comming directly from API call from frontend, 
       // But for weather we are fetching this at Backend itself therefor we specified this separately with "savedWeather"
 
 
     // 📅 6) SAVING FORECAST DATA | Generate date range
+    // 📅 Date loop
     const start = new Date(dates.startDate);
     const end = new Date(dates.endDate);
 
@@ -124,24 +128,40 @@ export const getSolarData = async (req, res) => {
 
     const forecasts = [];
 
+    let totalEnergy = 0;
+
     while (currentDate <= end) {
+      const seasonalFactor = getSeasonalFactor(currentDate);
+
+      const dailyEnergy =
+        result.baseEnergy *
+        seasonalFactor *
+        result.factors.tiltFactor *
+        result.factors.orientationFactor;
+
+      // 🧮 Add to total
+      totalEnergy += dailyEnergy;
+
+      // 🖨️ PRINT EACH DAY ENERGY (what you asked)
+      console.log(
+        `📅 ${currentDate.toISOString().split("T")[0]} → ⚡ ${dailyEnergy.toFixed(
+          2
+        )} kWh`
+      );
+
       forecasts.push({
         forecast_date: new Date(currentDate),
-        predicted_energy_kwh: result.dailyEnergy,
+        predicted_energy_kwh: dailyEnergy,
         location_id: savedLocation.location_id,
         panel_id: savedPanel.panel_id,
-        model_version: "v1",
+        model_version: "v2",
       });
 
       currentDate.setDate(currentDate.getDate() + 1);
     }
+    console.log(`\n🔋 Total Energy: ${totalEnergy.toFixed(2)} kWh\n`);
 
-    console.log("All forecasted energy values (kWh):");
-    forecasts.forEach((forecast, index) => {
-      console.log(`Day ${index + 1}: ${forecast.predicted_energy_kwh} kWh`);
-    });
-
-    // 💾 Bulk insert
+    // 💾 Save
     await Forecast.bulkCreate(forecasts);
 
     console.log("✅ Forecast data saved");
@@ -150,12 +170,23 @@ export const getSolarData = async (req, res) => {
     res.json({
       success: true,
       message: "Data processed successfully",
-      data: result,
+      forecast: forecasts.map(f => ({
+        date: f.forecast_date,
+        energy: f.predicted_energy_kwh
+      })),   // daily values
+      summary: {
+        totalEnergy: totalEnergy,
+        days: forecasts.length,
+      },
+      factors: {
+        tiltFactor: result.factors.tiltFactor,
+        orientationFactor: result.factors.orientationFactor,
+      },
       db: {
-        location: savedLocation, 
-        Weather: savedWeather,
-        panel: savedPanel
-      }
+        location: savedLocation,
+        weather: savedWeather,
+        panel: savedPanel,
+      },
     });
 
   } catch (error) {
