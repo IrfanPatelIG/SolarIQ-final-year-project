@@ -6,6 +6,7 @@ import sequelize from "./config/db.js";
 import "./models/index.js";
 import solarRoutes from "./routes/solarRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import insightRoutes from "./routes/insightRoutes.js";
 
 
 const app = express();
@@ -25,9 +26,14 @@ await sequelize.sync({ alter: true })
 app.use(cors());
 app.use(express.json());
 
+
 // Actual Routes
 app.use("/api/solar", solarRoutes);
+
 app.use("/api/analytics", analyticsRoutes);
+
+app.use("/api/insights", insightRoutes);
+
 
 // Just for Backend Health-check
 app.get("/", (req, res) => {

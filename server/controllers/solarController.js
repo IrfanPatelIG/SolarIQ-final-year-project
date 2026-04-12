@@ -56,6 +56,7 @@ export const getSolarData = async (req, res) => {
           lat,
           lon,
           appid: process.env.WEATHER_API_KEY,
+          units: "metric",
         },
       }
     );
@@ -78,19 +79,27 @@ export const getSolarData = async (req, res) => {
     // ⚡* Calculate irradiance
     const w = weatherRes.data;
 
-    const cloud = w.clouds?.all || 0;
-    const solar_irradiance = 1000 * (1 - cloud / 100);
+    // 🌡 Extract weather values
+    const temperature = w.main?.temp;
+    const humidity = w.main?.humidity;
+    const wind_speed = w.wind?.speed;
+    const cloud_cover = w.clouds?.all;
+    const precipitation = w.rain?.["1h"] || 0;
+    const air_pressure = w.main?.pressure;
+
+    // ☀️ Solar irradiance calculation
+    const solar_irradiance = 1000 * (1 - cloud_cover / 100);
 
     // 💾 3) Save Weather
     const savedWeather = await Weather.create({
       location_id: savedLocation.location_id,
-      temperature: w.main.temp,
-      humidity: w.main.humidity,
+      temperature: temperature,
+      humidity: humidity,
       solar_irradiance,
-      cloud_cover: cloud,
-      wind_speed: w.wind.speed,
-      precipitation: w.rain?.["1h"] || 0,
-      air_pressure: w.main.pressure,
+      cloud_cover: cloud_cover,
+      wind_speed: wind_speed,
+      precipitation: precipitation,
+      air_pressure: air_pressure,
       recorded_at: new Date(),
     });
 
