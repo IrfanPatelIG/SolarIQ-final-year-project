@@ -1,52 +1,33 @@
 import {
-  RadialBarChart,
-  RadialBar,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
   ResponsiveContainer,
-  PolarAngleAxis,
 } from "recharts";
 import Card from "./Card";
 
-const data = [
-  {
-    name: "Efficiency",
-    value: 92, // %
-    fill: "#FACC15",
-  },
-];
-
-export default function PanelCard() {
+export default function PanelCard({ data = [] }) {
   return (
     <Card title="Panel Performance">
-      <div className="w-full h-62.5 flex items-center justify-center">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart
-            innerRadius="70%"
-            outerRadius="100%"
-            data={data}
-            startAngle={90}
-            endAngle={-270}
-          >
-            <PolarAngleAxis
-              type="number"
-              domain={[0, 100]}
-              angleAxisId={0}
-              tick={false}
-            />
+      {data.length === 0 ? (
+        <p className="text-gray-500 text-sm">No data</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={data}>
+            <XAxis dataKey="tilt" stroke="#9CA3AF" />
+            <YAxis />
+            <Tooltip />
 
-            <RadialBar
-              background
-              dataKey="value"
-              cornerRadius={10}
+            <Bar
+              dataKey="energy"
+              fill="#FACC15"
+              radius={[8, 8, 0, 0]}
             />
-          </RadialBarChart>
+          </BarChart>
         </ResponsiveContainer>
-
-        {/* Center Text */}
-        <div className="absolute text-center">
-          <p className="text-2xl font-bold text-yellow-400">92%</p>
-          <p className="text-sm text-gray-400">Efficiency</p>
-        </div>
-      </div>
+      )}
     </Card>
   );
 }

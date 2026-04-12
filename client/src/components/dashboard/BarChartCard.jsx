@@ -8,33 +8,26 @@ import {
 } from "recharts";
 import Card from "./Card";
 
-// ✅ Default fallback data (weekly distribution)
-const defaultData = [
-  { date: "Mon", energy: 12 },
-  { date: "Tue", energy: 15 },
-  { date: "Wed", energy: 10 },
-  { date: "Thu", energy: 18 },
-  { date: "Fri", energy: 20 },
-  { date: "Sat", energy: 22 },
-  { date: "Sun", energy: 17 },
-];
-
-export default function BarChartCard({ data = defaultData }) {
+export default function BarChartCard({ data = [] }) {
   return (
     <Card title="Weekly Energy Distribution">
-      <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={data}>
-          <XAxis dataKey="date" stroke="#9CA3AF" />
-          <YAxis />
-          <Tooltip />
+      {data.length === 0 ? (
+        <p className="text-gray-500 text-sm">No data</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={data}>
+            <XAxis dataKey="day" stroke="#9CA3AF" />
+            <YAxis />
+            <Tooltip />
 
-          <Bar
-            dataKey="energy"
-            fill="#38BDF8"
-            radius={[8, 8, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+            <Bar
+              dataKey="avg_energy"
+              fill="#38BDF8"
+              radius={[8, 8, 0, 0]}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </Card>
   );
 }
