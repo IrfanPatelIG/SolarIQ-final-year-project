@@ -1,54 +1,77 @@
-import { generateRecommendations } from "../services/recommendationService.js";
+import Forecast from "../models/forecastModel.js";
+import Weather from "../models/weatherModel.js";
+import Panel from "../models/panelModel.js";
+import Location from "../models/locationModel.js";
 import { Op } from "sequelize";
+
 import {
   getTiltFactor,
   getOrientationFactor,
 } from "../services/solarService.js";
-import Panel from "../models/panelModel.js";
-import Weather from "../models/weatherModel.js";
-import Location from "../models/locationModel.js";
-import Forecast from "../models/forecastModel.js";
 
-// 🧠 COMMON FUNCTION (internal use)
-const getInsightData = async (startDate, endDate) => {
+import { generateRecommendations } from "../services/recommendationService.js";
+
+// 🧠 CENTRALIZED FUNCTION
+const getPanelInsightData = async (panelId, startDate, endDate) => {
+  // 1️⃣ Panel
+  const panel = await Panel.findByPk(panelId);
+
+  if (!panel) {
+    throw new Error("Panel not found");
+  }
+
+  // 2️⃣ Location
+  const location = await Location.findByPk(panel.location_id);
+
+  if (!location) {
+    throw new Error("Location not found");
+  }
+
+  // 3️⃣ Forecast (filtered)
   const forecasts = await Forecast.findAll({
     where: {
+      panel_id: panelId,
       forecast_date: {
         [Op.between]: [startDate, endDate],
       },
     },
   });
 
-  // 🌦 Get weather data for date range
+  // 4️⃣ Total energy
+  const totalEnergy = forecasts.reduce(
+    (sum, f) => sum + f.predicted_energy_kwh,
+    0
+  );
+
+  // 5️⃣ Weather (date-safe range)
   const start = new Date(startDate);
   const end = new Date(endDate);
-
-  // 🔥 Extend end to full day
   end.setHours(23, 59, 59, 999);
 
   const weatherData = await Weather.findAll({
     where: {
+      location_id: location.location_id,
       recorded_at: {
         [Op.between]: [start, end],
       },
     },
   });
 
-  // ⚠️ Safety check
   let avgWeather;
 
   if (!weatherData.length) {
     console.log("⚠️ No weather in range → using latest weather");
 
     const latestWeather = await Weather.findOne({
-      order: [["recorded_at", "DESC"]],
+      where: { location_id: location.location_id },
+      order: [["createdAt", "DESC"]],
     });
 
     avgWeather = {
-      cloud_cover: latestWeather.cloud_cover,
-      temperature: latestWeather.temperature,
-      wind_speed: latestWeather.wind_speed,
-      precipitation: latestWeather.precipitation,
+      cloud_cover: latestWeather?.cloud_cover || 0,
+      temperature: latestWeather?.temperature || 25,
+      wind_speed: latestWeather?.wind_speed || 0,
+      precipitation: latestWeather?.precipitation || 0,
     };
   } else {
     avgWeather = {
@@ -70,25 +93,7 @@ const getInsightData = async (startDate, endDate) => {
     };
   }
 
-  const totalEnergy = forecasts.reduce(
-    (sum, f) => sum + f.predicted_energy_kwh,
-    0,
-  );
-
-  // 📐 Get panel + location (latest for now)
-  const panel = await Panel.findOne({
-    order: [["createdAt", "DESC"]],
-  });
-
-  const location = await Location.findOne({
-    order: [["createdAt", "DESC"]],
-  });
-
-  if (!panel || !location) {
-    throw new Error("Panel or Location data missing");
-  }
-
-  // 🔥 Calculate REAL factors
+  // 6️⃣ Factors
   const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
   const orientationFactor = getOrientationFactor(panel.orientation);
 
@@ -97,19 +102,16 @@ const getInsightData = async (startDate, endDate) => {
     orientationFactor,
   };
 
-  console.log("📊 Forecast count:", forecasts.length);
-  console.log("🌦 Weather count:", weatherData.length);
-
-  return generateRecommendations({
-    weather: avgWeather,
-    factors,
+  return {
     totalEnergy,
-  });
+    avgWeather,
+    factors,
+  };
 };
 
-//✅ 1️⃣ ALERTS API
 export const getAlerts = async (req, res) => {
   try {
+    const { panelId } = req.params;
     const { startDate, endDate } = req.query;
 
     if (!startDate || !endDate) {
@@ -118,21 +120,33 @@ export const getAlerts = async (req, res) => {
       });
     }
 
-    const insights = await getInsightData(startDate, endDate);
+    const data = await getPanelInsightData(
+      panelId,
+      startDate,
+      endDate
+    );
+
+    const insights = generateRecommendations({
+      weather: data.avgWeather,
+      factors: data.factors,
+      totalEnergy: data.totalEnergy,
+    });
 
     res.json({
       success: true,
       alerts: insights.alerts,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error fetching alerts" });
+    console.error(err.message);
+    res.status(500).json({
+      error: err.message || "Error fetching alerts",
+    });
   }
 };
 
-// ✅ 2️⃣ RECOMMENDATIONS API
 export const getRecommendations = async (req, res) => {
   try {
+    const { panelId } = req.params;
     const { startDate, endDate } = req.query;
 
     if (!startDate || !endDate) {
@@ -141,14 +155,26 @@ export const getRecommendations = async (req, res) => {
       });
     }
 
-    const insights = await getInsightData(startDate, endDate);
+    const data = await getPanelInsightData(
+      panelId,
+      startDate,
+      endDate
+    );
+
+    const insights = generateRecommendations({
+      weather: data.avgWeather,
+      factors: data.factors,
+      totalEnergy: data.totalEnergy,
+    });
 
     res.json({
       success: true,
       recommendations: insights.recommendations,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error fetching recommendations" });
+    console.error(err.message);
+    res.status(500).json({
+      error: err.message || "Error fetching recommendations",
+    });
   }
 };

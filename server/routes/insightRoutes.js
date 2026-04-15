@@ -6,7 +6,7 @@ import {
 
 const router = express.Router();
 
-router.get("/alerts", getAlerts);
-router.get("/recommendations", getRecommendations);
+router.get("/:panelId/alerts", getAlerts);
+router.get("/:panelId/recommendations", getRecommendations);
 
 export default router;

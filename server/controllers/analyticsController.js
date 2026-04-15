@@ -5,18 +5,22 @@ import sequelize from "../config/db.js";
 // 1️⃣ Daily Energy Trend
 export const getDailyEnergy = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    if (!startDate || !endDate) {
-      return res.status(400).json({ error: "startDate and endDate required" });
+    const { startDate, endDate, panelId } = req.query;
+
+    const whereClause = {
+      forecast_date: {
+        [Op.between]: [startDate, endDate],
+      },
+    };
+
+    // 🎯 Add panel filter
+    if (panelId) {
+      whereClause.panel_id = panelId;
     }
 
     const data = await Forecast.findAll({
       attributes: ["forecast_date", "predicted_energy_kwh"],
-      where: {
-        forecast_date: {
-          [Op.between]: [startDate, endDate],
-        },
-      },
+      where: whereClause,
       order: [["forecast_date", "ASC"]],
     });
 
@@ -30,25 +34,24 @@ export const getDailyEnergy = async (req, res) => {
 // 2️⃣ Weather Impact
 export const getWeatherImpact = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    if (!startDate || !endDate) {
-      return res.status(400).json({ error: "startDate and endDate required" });
-    }
+    const { startDate, endDate, panelId } = req.query;
 
     const data = await sequelize.query(`
       SELECT 
+        f.panel_id,
         f.forecast_date,
         f.predicted_energy_kwh,
         w.cloud_cover,
         w.temperature
       FROM forecasted_values f
       JOIN weather_data w
-      ON f.location_id = w.location_id
-      AND DATE(w.recorded_at) = f.forecast_date
+        ON f.location_id = w.location_id
+        AND DATE(w.recorded_at) BETWEEN :startDate AND :endDate
       WHERE f.forecast_date BETWEEN :startDate AND :endDate
+      ${panelId ? "AND f.panel_id = :panelId" : ""}
       ORDER BY f.forecast_date ASC
     `, {
-      replacements: { startDate, endDate },
+      replacements: { startDate, endDate, panelId },
     });
 
     res.json(data[0]);
@@ -61,9 +64,16 @@ export const getWeatherImpact = async (req, res) => {
 // 3️⃣ Energy Distribution (by weekday)
 export const getEnergyDistribution = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    if (!startDate || !endDate) {
-      return res.status(400).json({ error: "startDate and endDate required" });
+    const { startDate, endDate, panelId } = req.query;
+
+    const whereClause = {
+      forecast_date: {
+        [Op.between]: [startDate, endDate],
+      },
+    };
+
+    if (panelId) {
+      whereClause.panel_id = panelId;
     }
 
     const data = await Forecast.findAll({
@@ -71,11 +81,7 @@ export const getEnergyDistribution = async (req, res) => {
         [fn("DAYNAME", col("forecast_date")), "day"],
         [fn("AVG", col("predicted_energy_kwh")), "avg_energy"],
       ],
-      where: {
-        forecast_date: {
-          [Op.between]: [startDate, endDate],
-        },
-      },
+      where: whereClause,
       group: [fn("DAYNAME", col("forecast_date"))],
     });
 
@@ -96,6 +102,7 @@ export const getPanelPerformance = async (req, res) => {
 
     const data = await Panel.findAll({
       attributes: [
+        "panel_id",
         "tilt",
         "orientation",
         [fn("AVG", col("Forecasts.predicted_energy_kwh")), "avg_energy"],
@@ -111,7 +118,7 @@ export const getPanelPerformance = async (req, res) => {
           },
         },
       ],
-      group: ["tilt", "orientation"],
+      group: ["Panel.panel_id", "tilt", "orientation"],
       raw: true,
     });
 
