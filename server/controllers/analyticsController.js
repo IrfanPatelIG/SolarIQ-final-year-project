@@ -1,6 +1,8 @@
 import { Forecast, Weather, Panel } from "../models/index.js";
 import { Op, fn, col } from "sequelize";
 import sequelize from "../config/db.js";
+import { calculateEfficiency } from "../services/efficiencyService.js";
+
 
 // 1️⃣ Daily Energy Trend
 export const getDailyEnergy = async (req, res) => {
@@ -126,5 +128,40 @@ export const getPanelPerformance = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error fetching panel performance" });
+  }
+};
+
+
+// 5️⃣ Efficiancy Score
+export const getPanelEfficiency = async (req, res) => {
+  try {
+    const { panelId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    if (!panelId || !startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: "panelId, startDate, endDate required",
+      });
+    }
+
+    const result = await calculateEfficiency({
+      panelId,
+      startDate,
+      endDate,
+    });
+
+    res.json({
+      success: true,
+      dateRange: { startDate, endDate },
+      ...result,
+    });
+  } catch (error) {
+    console.error("❌ Efficiency Error:", error.message);
+
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error calculating efficiency",
+    });
   }
 };

@@ -7,6 +7,7 @@ import "./models/index.js";
 import solarRoutes from "./routes/solarRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import insightRoutes from "./routes/insightRoutes.js";
+import efficiencyRoutes from "./routes/analyticsRoutes.js";
 
 
 const app = express();
@@ -33,6 +34,8 @@ app.use("/api/solar", solarRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
 app.use("/api/insights", insightRoutes);
+
+app.use("/api/analytics/efficiency", efficiencyRoutes);
 
 
 // Just for Backend Health-check
