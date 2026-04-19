@@ -13,6 +13,6 @@ router.get("/daily-energy", getDailyEnergy);
 router.get("/weather-impact", getWeatherImpact);
 router.get("/distribution", getEnergyDistribution);
 router.get("/panel-performance", getPanelPerformance);
-router.get("/panel/:panelId", getPanelEfficiency);
+router.get("/efficiency/panel/:panelId", getPanelEfficiency);
 
 export default router;

@@ -20,7 +20,7 @@ const Navbar = () => {
           </a>
         </li>
         <li>
-          <a href="#projects" className="hover:text-cyan-400 transition">
+          <a href="#setup" className="hover:text-cyan-400 transition">
             Setup
           </a>
         </li>

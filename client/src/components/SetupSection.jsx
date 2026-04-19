@@ -162,6 +162,8 @@ const SetupSection = () => {
       },
     };
 
+    console.log("Payload: ", payload);
+
     const res = await fetch("http://localhost:5000/api/solar/", {
       method: "POST",
       headers: {
@@ -175,7 +177,7 @@ const SetupSection = () => {
   };
 
   return (
-    <section className=" w-full min-h-screen bg-gray-900 text-white flex flex-col items-center py-16 px-4">
+    <section id="setup" className="w-full min-h-screen bg-gray-900 text-white flex flex-col items-center py-16 px-4">
       <div className="text-center mb-12">
         <h2 className="text-3xl font-bold mb-2">Setup Your Solar Forecast</h2>
         <p className="text-gray-300 max-w-xl mx-auto">

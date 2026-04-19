@@ -3,46 +3,44 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import sequelize from "./config/db.js";
+
 import "./models/index.js";
+
+// Routes
 import solarRoutes from "./routes/solarRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import insightRoutes from "./routes/insightRoutes.js";
-import efficiencyRoutes from "./routes/analyticsRoutes.js";
-
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 const app = express();
 const PORT = 5000;
+
 dotenv.config();
 
-// Connecting to DB
+// DB
 await connectDB();
 
-// Synchronizing Tables in DB
 await sequelize.sync({ alter: true })
-.then(() => console.log("✅ Tables synced"))
-.catch(err => console.error("❌ Sync error:", err));
-
+  .then(() => console.log("✅ Tables synced"))
+  .catch(err => console.error("❌ Sync error:", err));
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-
-// Actual Routes
+// Routes
 app.use("/api/solar", solarRoutes);
-
 app.use("/api/analytics", analyticsRoutes);
-
 app.use("/api/insights", insightRoutes);
 
-app.use("/api/analytics/efficiency", efficiencyRoutes);
+// ✅ Dashboard (MAIN API)
+app.use("/api", dashboardRoutes);
 
-
-// Just for Backend Health-check
+// Health check
 app.get("/", (req, res) => {
   res.send("SolarIQ Backend Running 🚀");
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🖥️  Server running on http://localhost:${PORT}`);
+  console.log(`🖥️ Server running on http://localhost:${PORT}`);
 });

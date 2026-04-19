@@ -27,9 +27,9 @@ const HeroSection = () => {
           Empowering innovation through Insights and Predictions
         </p>
         <div className="mt-15 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button className="rounded-full border text-lg text-white hover:bg-cyan-400 hover:text-black font-semibold px-10 py-3 shadow-lg shadow-cyan-500/20 transition-all duration-300">
-            Start
-          </button>
+          <a href="#setup" className="group flex justify-center items-center gap-2.5 rounded-full border text-lg text-white hover:cursor-pointer hover:bg-cyan-500 hover:text-black font-semibold px-10 py-3 shadow-lg shadow-cyan-500/20 transition-all duration-300">
+            <span>Get Start </span> <span className="right-arrow group-hover:translate-x-2.5 transition-all duration-200 ease-in-out dealy-100">→</span>
+          </a>
         </div>
       </div>
     </section>
