@@ -29,6 +29,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use("login");
 app.use("/api/solar", solarRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/insights", insightRoutes);
