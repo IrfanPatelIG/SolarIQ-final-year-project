@@ -22,12 +22,35 @@ import Location from "../models/locationModel.js";
 export const getDashboardData = async (req, res) => {
   try {
     const { panelId } = req.params;
+    
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+    console.log("USER:", req.user);
+    const userId = req.user.user_id;
     const { startDate, endDate } = req.query;
 
     if (!panelId || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
         message: "panelId, startDate and endDate required"
+      });
+    }
+
+    // 🔐 USER VALIDATION
+    const panel = await Panel.findOne({
+      where: {
+        panel_id: panelId,
+        user_id: userId,
+      },
+    });
+
+    if (!panel) {
+      return res.status(403).json({
+        message: "Unauthorized: Panel does not belong to this user",
       });
     }
 
@@ -39,6 +62,11 @@ export const getDashboardData = async (req, res) => {
           [Op.between]: [startDate, endDate]
         }
       },
+      include: [{
+        model: Panel,
+        attributes: [],
+        where: { user_id: userId }, // 🔥 USER FILTER
+      }],
       order: [["forecast_date", "ASC"]]
     });
 
@@ -47,7 +75,7 @@ export const getDashboardData = async (req, res) => {
       energy: f.predicted_energy_kwh
     }));
 
-    // 2️⃣ DAILY ENERGY (same as forecast)
+    // 2️⃣ DAILY ENERGY
     const dailyEnergy = forecast;
 
     // 3️⃣ WEATHER IMPACT
@@ -82,8 +110,10 @@ export const getDashboardData = async (req, res) => {
         distributionMap[day].length
     }));
 
-    // 5️⃣ PANEL PERFORMANCE
-    const panels = await Panel.findAll();
+    // 5️⃣ PANEL PERFORMANCE (🔥 FIXED USER FILTER)
+    const panels = await Panel.findAll({
+      where: { user_id: userId } // 🔥 IMPORTANT
+    });
 
     const panelPerformance = panels.map(p => ({
       panel_id: p.panel_id,
@@ -94,15 +124,14 @@ export const getDashboardData = async (req, res) => {
         forecasts.length
     }));
 
-    // 6️⃣ EFFICIENCY (REAL SERVICE)
+    // 6️⃣ EFFICIENCY
     const efficiencyData = await calculateEfficiency({
       panelId,
       startDate,
       endDate
     });
 
-    // 7️⃣ INSIGHTS (REAL LOGIC)
-    const panel = await Panel.findByPk(panelId);
+    // 7️⃣ INSIGHTS (🔥 FIXED WITHOUT BREAKING LOGIC)
     const location = await Location.findByPk(panel.location_id);
 
     const tiltFactor = getTiltFactor(panel.tilt, location.latitude);

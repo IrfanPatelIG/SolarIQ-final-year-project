@@ -3,10 +3,11 @@ import {
   getAlerts,
   getRecommendations,
 } from "../controllers/insightController.js";
+import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/:panelId/alerts", getAlerts);
-router.get("/:panelId/recommendations", getRecommendations);
+router.get("/alerts", protect, getAlerts);
+router.get("/recommendations", protect, getRecommendations);
 
 export default router;

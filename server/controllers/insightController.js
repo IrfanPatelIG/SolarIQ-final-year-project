@@ -12,9 +12,11 @@ import {
 import { generateRecommendations } from "../services/recommendationService.js";
 
 // 🧠 CENTRALIZED FUNCTION
-const getPanelInsightData = async (panelId, startDate, endDate) => {
+const getPanelInsightData = async (userId, startDate, endDate) => {
   // 1️⃣ Panel
-  const panel = await Panel.findByPk(panelId);
+  const panel = await Panel.findOne({
+    where: { user_id : userId }
+  });
 
   if (!panel) {
     throw new Error("Panel not found");
@@ -30,7 +32,7 @@ const getPanelInsightData = async (panelId, startDate, endDate) => {
   // 3️⃣ Forecast (filtered)
   const forecasts = await Forecast.findAll({
     where: {
-      panel_id: panelId,
+      panel_id: panel.panel_id,
       forecast_date: {
         [Op.between]: [startDate, endDate],
       },
@@ -111,17 +113,11 @@ const getPanelInsightData = async (panelId, startDate, endDate) => {
 
 export const getAlerts = async (req, res) => {
   try {
-    const { panelId } = req.params;
+    const userId = req.user.user_id;
     const { startDate, endDate } = req.query;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({
-        error: "startDate and endDate required",
-      });
-    }
-
     const data = await getPanelInsightData(
-      panelId,
+      userId,
       startDate,
       endDate
     );
@@ -136,27 +132,19 @@ export const getAlerts = async (req, res) => {
       success: true,
       alerts: insights.alerts,
     });
+
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({
-      error: err.message || "Error fetching alerts",
-    });
+    res.status(500).json({ error: err.message });
   }
 };
 
 export const getRecommendations = async (req, res) => {
   try {
-    const { panelId } = req.params;
+    const userId = req.user.user_id;
     const { startDate, endDate } = req.query;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({
-        error: "startDate and endDate required",
-      });
-    }
-
     const data = await getPanelInsightData(
-      panelId,
+      userId,
       startDate,
       endDate
     );
@@ -171,10 +159,8 @@ export const getRecommendations = async (req, res) => {
       success: true,
       recommendations: insights.recommendations,
     });
+
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({
-      error: err.message || "Error fetching recommendations",
-    });
+    res.status(500).json({ error: err.message });
   }
 };

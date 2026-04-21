@@ -35,7 +35,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/insights", insightRoutes);
 
 // ✅ Dashboard (MAIN API)
-app.use("/api", dashboardRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Health check
 app.get("/", (req, res) => {
