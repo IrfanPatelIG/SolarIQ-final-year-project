@@ -33,7 +33,11 @@ const Location = sequelize.define(
     timezone: {
       type: DataTypes.STRING,
       allowNull: true,
-    }
+    },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     tableName: "location_data",

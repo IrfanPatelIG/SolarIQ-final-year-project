@@ -20,16 +20,16 @@ dotenv.config();
 // DB
 await connectDB();
 
-await sequelize.sync({ alter: true })
+await sequelize.sync()
   .then(() => console.log("✅ Tables synced"))
-  .catch(err => console.error("❌ Sync error:", err));
+  .catch(err => console.error("❌ DB Tables Sync error:", err));
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("login");
+// app.use("login");
 app.use("/api/solar", solarRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/insights", insightRoutes);

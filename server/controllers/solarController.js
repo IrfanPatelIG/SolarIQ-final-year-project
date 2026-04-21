@@ -65,6 +65,8 @@ export const getSolarData = async (req, res) => {
     const timezone = weatherRes.data?.timezone || null;
 
     // 💾 2) SAVE LOCATION (FULL DATA)
+    const userId = 1;
+
     const savedLocation = await Location.create({
       latitude: lat,
       longitude: lon,
@@ -72,6 +74,7 @@ export const getSolarData = async (req, res) => {
       state,
       country,
       timezone,
+      user_id: userId
     });
 
     console.log("✅ Location saved:", savedLocation.toJSON());
@@ -112,6 +115,7 @@ export const getSolarData = async (req, res) => {
       orientation: panel.orientation,
       installation_date: null, // optional for now
       location_id: savedLocation.location_id,
+      user_id: userId
     });
 
     console.log("✅ Panel saved:", savedPanel.toJSON());

@@ -1,11 +1,20 @@
 import sequelize from "../config/db.js";
 
+import User from "./userModel.js";
 import Location from "./locationModel.js";
 import Panel from "./panelModel.js";
 import Forecast from "./forecastModel.js";
 import Weather from "./weatherModel.js";
 
 // 🔗 RELATIONS
+
+// User → Location
+User.hasMany(Location, { foreignKey: "user_id" });
+Location.belongsTo(User, { foreignKey: "user_id" });
+
+// User → Panel (optional but required for faster queries for future plan)
+User.hasMany(Panel, { foreignKey: "user_id" });
+Panel.belongsTo(User, { foreignKey: "user_id" });
 
 // Location → Panel
 Location.hasMany(Panel, {

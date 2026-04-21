@@ -26,6 +26,10 @@ const Panel = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true, // important
     },
+    user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     tableName: "panel_configs",
