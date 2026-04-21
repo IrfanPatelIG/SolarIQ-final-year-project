@@ -7,11 +7,24 @@ import {
   Bell,
   Lightbulb,
   Settings,
+  LogIn,
+  UserPlus,
+  LogOut,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Sidebar({ open, setOpen }) {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // 🔐 Simple auth check
+  const token = localStorage.getItem("token");
+  const isAuth = !!token;
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
 
   return (
     <>
@@ -78,7 +91,6 @@ export default function Sidebar({ open, setOpen }) {
             />
           </nav>
 
-          {/* Divider */}
           <div className="my-6 border-t border-[#1F2937]" />
 
           {/* SECONDARY NAV */}
@@ -107,6 +119,50 @@ export default function Sidebar({ open, setOpen }) {
               active={location.pathname === "/#setup"}
             />
           </nav>
+
+          {/* AUTH SECTION */}
+          <div className="mt-auto pt-6 border-t border-[#1F2937] flex flex-col gap-2">
+
+            {!isAuth ? (
+              <>
+                <Item
+                  icon={<LogIn size={18} />}
+                  label="Login"
+                  open={open}
+                  to="/login"
+                  active={location.pathname === "/login"}
+                />
+
+                <Item
+                  icon={<UserPlus size={18} />}
+                  label="Sign Up"
+                  open={open}
+                  to="/signup"
+                  active={location.pathname === "/signup"}
+                />
+              </>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className={`
+                  flex items-center gap-3 px-3 py-3 rounded-lg
+                  text-red-400 hover:bg-red-500/10 transition
+                `}
+              >
+                <LogOut size={18} />
+                <span
+                  className={`
+                    text-sm whitespace-nowrap transition-all duration-200
+                    ${open ? "opacity-100 ml-1" : "opacity-0 w-0 overflow-hidden"}
+                  `}
+                >
+                  Logout
+                </span>
+              </button>
+            )}
+
+          </div>
+
         </div>
       </aside>
     </>
@@ -131,8 +187,7 @@ const Item = memo(function Item({ icon, label, open, to, active }) {
 
       <span
         className={`
-          text-sm whitespace-nowrap
-          transition-all duration-200
+          text-sm whitespace-nowrap transition-all duration-200
           ${open ? "opacity-100 ml-1" : "opacity-0 w-0 overflow-hidden"}
         `}
       >

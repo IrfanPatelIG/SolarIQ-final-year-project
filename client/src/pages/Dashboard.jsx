@@ -1,19 +1,23 @@
 import { useState } from "react";
+
 import Sidebar from "../components/dashboard/Sidebar";
 import Header from "../components/dashboard/Header";
+
 import LineChartCard from "../components/dashboard/LineChartCard";
 import BarChartCard from "../components/dashboard/BarChartCard";
 import PredictionChart from "../components/dashboard/PredictionChart";
 import Insights from "../components/dashboard/Insights";
 import PanelCard from "../components/dashboard/PanelCard";
-import StatCard from "../components/dashboard/StatCard";
 import Alerts from "../components/dashboard/Alerts";
+
+import StatCard from "../components/dashboard/StatCard";
+import Card from "../components/dashboard/Card";
 
 export default function Dashboard() {
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#ffffff]">
 
       {/* Sidebar */}
       <Sidebar open={open} setOpen={setOpen} />
@@ -28,22 +32,36 @@ export default function Dashboard() {
 
         {/* KPI CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard title="Current Weather" value="26°C" sub="Sunny" />
-          <StatCard title="Energy Forecast" value="5.2 kWh" sub="Predicted" />
-          <StatCard title="System Efficiency" value="82%" sub="Efficient" />
+          <StatCard
+            title="Current Weather"
+            value="26°C"
+            sub="Sunny"
+            variant="weather"
+          />
+
+          <StatCard
+            title="Energy Forecast"
+            value="5.2 kWh"
+            sub="Predicted"
+            variant="energy"
+          />
+
+          <StatCard
+            title="System Efficiency"
+            value="82%"
+            sub="Efficient"
+            variant="efficiency"
+          />
         </div>
 
         {/* MAIN CONTENT */}
-        <div className="space-y-6 w-full">
-          <LineChartCard />
-          <PredictionChart />
-          <BarChartCard />
-          <PanelCard />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <LineChartCard/>
+            <PredictionChart />
+            <BarChartCard />
+            <PanelCard />
             <Alerts />
             <Insights />
-          </div>
         </div>
       </div>
     </div>

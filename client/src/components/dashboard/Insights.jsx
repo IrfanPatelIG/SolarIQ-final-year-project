@@ -13,7 +13,7 @@ export default function Insights({ data }) {
     <div id="insights" className=" bg-white border border-gray-200 rounded-2xl p-5 shadow-sm ">
       
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Insights
+        Recommendations
       </h2>
 
       <ul className="space-y-3">
