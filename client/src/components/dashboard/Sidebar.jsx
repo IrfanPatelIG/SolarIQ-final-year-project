@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { memo } from "react";
 import {
   Menu,
   X,
@@ -10,8 +10,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-export default function Sidebar() {
-  const [open, setOpen] = useState(true);
+export default function Sidebar({ open, setOpen }) {
   const location = useLocation();
 
   return (
@@ -37,14 +36,14 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed md:relative z-40 h-screen
-          bg-[#111827] border-r border-[#1F2937]
+          fixed top-0 left-0 h-screen z-40
+          bg-[#111827] border-r border-[#374b66]
           transition-all duration-300 ease-in-out
           ${open ? "w-64" : "w-16"}
           ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
-        <div className="flex flex-col h-full px-3 py-4">
+        <div className="flex flex-col h-full px-3 py-4 overflow-y-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -60,7 +59,7 @@ export default function Sidebar() {
             </button>
           </div>
 
-          {/* 🔥 PRIMARY NAV */}
+          {/* PRIMARY NAV */}
           <nav className="flex flex-col gap-2">
             <Item
               icon={<Home size={18} />}
@@ -82,7 +81,7 @@ export default function Sidebar() {
           {/* Divider */}
           <div className="my-6 border-t border-[#1F2937]" />
 
-          {/* 🔧 SECONDARY NAV */}
+          {/* SECONDARY NAV */}
           <nav className="flex flex-col gap-2">
             <Item
               icon={<Lightbulb size={18} />}
@@ -108,7 +107,6 @@ export default function Sidebar() {
               active={location.pathname === "/#setup"}
             />
           </nav>
-
         </div>
       </aside>
     </>

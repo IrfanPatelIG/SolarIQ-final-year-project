@@ -11,7 +11,7 @@ const HeroSection = () => {
       />
 
       {/* Overlay (VERY IMPORTANT) */}
-      <div className="absolute inset-0 bg-black/50"></div>
+      <div className="absolute inset-0 bg-black/40"></div>
 
       {/* Background effect */}
       <div className="absolute inset-0 opacity-100">

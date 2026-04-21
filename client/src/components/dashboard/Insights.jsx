@@ -1,48 +1,38 @@
-export default function Insights({ data = [] }) {
-  
-  if (!data.length) {
-    return (
-      <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-5">
-        <h2 className="text-xl text-white font-bold mb-4">Insights</h2>
-        <p className="text-gray-400 text-sm">No data available</p>
-      </div>
-    );
-  }
+export default function Insights({ data }) {
+  // 🔥 dummy insights (fallback)
+  const dummyInsights = [
+    "Adjust panel tilt to 30° for maximum efficiency this week",
+    "Peak energy generation expected between 12:00–14:00",
+    "Low cloud cover tomorrow may increase output by ~12%",
+    "Current orientation slightly reduces morning efficiency",
+  ];
 
-  // 🔥 Logic
-  const maxEnergyDay = data.reduce((prev, curr) =>
-    curr.energy > prev.energy ? curr : prev
-  );
-
-  const highTemp = data.some(d => d.temp > 35);
-  const lowEnergyDays = data.filter(d => d.energy < 12);
+  const insights = data && data.length ? data : dummyInsights;
 
   return (
-    <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-5">
-      <h2 className="text-xl text-white font-bold mb-4">Insights</h2>
+    <div id="insights" className=" bg-white border border-gray-200 rounded-2xl p-5 shadow-sm ">
+      
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        Insights
+      </h2>
 
-      <ul className="space-y-3 text-sm text-gray-300">
+      <ul className="space-y-3">
+        {insights.map((item, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
+          >
+            {/* Icon */}
+            <span className="text-blue-500 text-lg">💡</span>
 
-        {/* Peak Production */}
-        <li className="text-yellow-400">
-          • Peak production on {maxEnergyDay.date} ({maxEnergyDay.energy} kWh)
-        </li>
-
-        {/* Temperature Warning */}
-        {highTemp && (
-          <li className="text-green-400">
-            • Efficiency may drop due to high temperature ( 35°C)
+            {/* Text */}
+            <span className="text-sm text-gray-700">
+              {item}
+            </span>
           </li>
-        )}
-
-        {/* Low Energy */}
-        {lowEnergyDays.length > 0 && (
-          <li className="text-blue-400">
-            • Low output detected on {lowEnergyDays.map(d => d.date).join(", ")}
-          </li>
-        )}
-
+        ))}
       </ul>
+
     </div>
   );
 }

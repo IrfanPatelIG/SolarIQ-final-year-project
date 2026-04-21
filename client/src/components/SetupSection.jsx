@@ -17,7 +17,6 @@ const SetupSection = () => {
 
   const [error, setError] = useState("");
 
-  // ✅ Separate loading states
   const [searchLoading, setSearchLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -114,8 +113,8 @@ const SetupSection = () => {
     setEndDate(d.toISOString().split("T")[0]);
   }, [startDate]);
 
-  // 🚀 SUBMIT
-  const handleSubmit = () => {
+  // 🚀 SUBMIT (FIXED)
+  const handleSubmit = async () => {
     if (!coords && (!lat || !lon)) {
       return setError("Select a location first");
     }
@@ -125,30 +124,60 @@ const SetupSection = () => {
     }
 
     setSubmitLoading(true);
+    setError("");
 
     const payload = {
       location: coords || { lat, lon },
-      panel: { area: panelArea, tilt, orientation },
+      panel: {
+        area: Number(panelArea),
+        tilt: Number(tilt),
+        orientation,
+      },
       dates: { startDate, endDate },
     };
 
     console.log("Payload:", payload);
 
-    setTimeout(() => {
-      localStorage.setItem("solarData", JSON.stringify(payload));
+    try {
+      const res = await fetch("http://localhost:5000/api/solar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.db?.panel?.panel_id) {
+        throw new Error(data.message || "Invalid backend response");
+      }
+
+      const panelId = data.db.panel.panel_id;
+
+      localStorage.setItem("panelId", panelId);
+      localStorage.setItem("solarResponse", JSON.stringify(data));
+      localStorage.setItem("dates", JSON.stringify({ startDate, endDate }));
+
       window.location.href = "/dashboard";
-    }, 1200);
+
+    } catch (err) {
+      console.error(err);
+      setError("Backend connection failed");
+    }
+
+    setSubmitLoading(false);
   };
 
   return (
-    <section className="w-full min-h-screen bg-[#0f172a] text-white flex flex-col items-center py-16 px-4">
+    <section className="w-full min-h-screen bg-gray-50 text-gray-900 flex flex-col items-center py-16 px-4">
 
       {/* HEADER */}
       <div className="text-center mb-12">
         <h2 className="text-4xl font-bold">
           Setup Your Solar Forecast ⚡
         </h2>
-        <p className="text-gray-300 mt-3 max-w-xl">
+        <p className="text-gray-600 mt-3 max-w-xl">
           Configure your system and generate accurate solar insights.
         </p>
       </div>
@@ -192,8 +221,8 @@ const SetupSection = () => {
       </div>
 
       {/* SMART PREVIEW */}
-      <div className="mt-8 bg-[#1E3A8A]/30 p-5 rounded-xl text-center w-full max-w-md">
-        <p className="text-sm text-gray-300">Estimated Output</p>
+     <div className="mt-8 bg-white border border-gray-200 shadow-sm p-5 rounded-xl text-center w-full max-w-md">
+        <p className="text-sm text-gray-500">Estimated Output</p>
         <h2 className="text-2xl font-bold text-[#FFC107]">
           {panelArea ? (panelArea * 0.2).toFixed(2) : "0"} kWh/day ⚡
         </h2>

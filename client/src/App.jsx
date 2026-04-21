@@ -2,16 +2,16 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
-import SetupSection from "./components/SetupSection";
 import Footer from "./components/Footer";
 
 import Dashboard from "./pages/Dashboard";
+import SetupSection from "./components/SetupSection";
 
 const Home = () => {
   return (
     <>
       <HeroSection />
-      <SetupSection />
+      <SetupSection/>
     </>
   );
 };
