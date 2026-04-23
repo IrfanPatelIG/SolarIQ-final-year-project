@@ -13,8 +13,7 @@ export const protect = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // contains user_id
-    // req.user = { user_id: 1 }; // contains user_id
+    req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({ message: "Token failed" });

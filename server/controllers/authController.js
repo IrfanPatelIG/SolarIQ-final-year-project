@@ -44,7 +44,7 @@ export const registerUser = async (req, res) => {
       message: "User registered successfully",
       data: {
         user: {
-          id: newUser.id,
+          user_id: newUser.user_id,
           name: newUser.name,
           email: newUser.email,
         },
@@ -53,6 +53,67 @@ export const registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Register Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+
+
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // 1. Validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password required",
+      });
+    }
+
+    // 2. Find user
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Email",
+      });
+    }
+
+    // 3. Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Password",
+      });
+    }
+
+    // 4. Generate token
+    const token = generateToken(user);
+
+    // 5. Response
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        user: {
+          user_id: user.user_id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+        token,
+      },
+    });
+
+  } catch (error) {
+    console.error("Login Error:", error);
     return res.status(500).json({
       success: false,
       message: "Server error",
