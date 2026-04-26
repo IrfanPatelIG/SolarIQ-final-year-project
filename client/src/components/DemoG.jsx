@@ -1,90 +1,107 @@
 import React from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-} from "recharts";
-
-const solarData = [
-  { time: "6 AM", energy: 5, temp: 18, efficiency: 20 },
-  { time: "8 AM", energy: 20, temp: 22, efficiency: 40 },
-  { time: "10 AM", energy: 45, temp: 26, efficiency: 65 },
-  { time: "12 PM", energy: 70, temp: 30, efficiency: 78 },
-  { time: "2 PM", energy: 82, temp: 32, efficiency: 85 },
-  { time: "4 PM", energy: 60, temp: 29, efficiency: 70 },
-  { time: "6 PM", energy: 30, temp: 24, efficiency: 40 },
-];
+import { Link } from 'react-router-dom';
+import { TrendingUp, Zap, Shield, BarChart3, Sun, Cloud, Activity } from 'lucide-react';
 
 const DemoGraphsPage = () => {
   return (
-    <div className="min-h-screen bg-[#020617] text-white p-8">
-      <h1 className="text-3xl font-bold text-cyan-400 mb-8">
-        SolarIQ Dashboard - Demo Graphs
-      </h1>
+    <section className="w-full bg-white py-24 px-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Section Header */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            Powerful Features
+          </h2>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            Everything you need to optimize your solar energy production and maximize your returns
+          </p>
+        </div>
 
-      {/* Energy Production Graph */}
-      <div className="bg-[#0f172a] p-6 rounded-2xl shadow-lg mb-10">
-        <h2 className="text-xl font-semibold mb-4">
-          Solar Energy Production (kWh)
-        </h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={solarData}>
-            <CartesianGrid opacity={0.2} />
-            <XAxis dataKey="time" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="energy"
-              stroke="#22d3ee"
-              strokeWidth={3}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Feature 1 */}
+          <div className="group bg-gradient-to-br from-blue-50 to-cyan-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <TrendingUp className="text-white" size={28} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">AI Predictions</h3>
+            <p className="text-slate-600">
+              Advanced machine learning algorithms predict your solar energy output with 95% accuracy
+            </p>
+          </div>
 
-      {/* Temperature Graph */}
-      <div className="bg-[#0f172a] p-6 rounded-2xl shadow-lg mb-10">
-        <h2 className="text-xl font-semibold mb-4">Panel Temperature (°C)</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={solarData}>
-            <CartesianGrid opacity={0.2} />
-            <XAxis dataKey="time" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip />
-            <Area
-              type="monotone"
-              dataKey="temp"
-              stroke="#f472b6"
-              fill="#be185d50"
-              strokeWidth={3}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+          {/* Feature 2 */}
+          <div className="group bg-gradient-to-br from-cyan-50 to-blue-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Zap className="text-white" size={28} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">Real-time Monitoring</h3>
+            <p className="text-slate-600">
+              Track your energy production in real-time with live updates and instant alerts
+            </p>
+          </div>
 
-      {/* Efficiency Graph */}
-      <div className="bg-[#0f172a] p-6 rounded-2xl shadow-lg mb-10">
-        <h2 className="text-xl font-semibold mb-4">Panel Efficiency (%)</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={solarData}>
-            <CartesianGrid opacity={0.2} />
-            <XAxis dataKey="time" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip />
-            <Bar dataKey="efficiency" fill="#22c55e" />
-          </BarChart>
-        </ResponsiveContainer>
+          {/* Feature 3 */}
+          <div className="group bg-gradient-to-br from-blue-50 to-cyan-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Shield className="text-white" size={28} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">Smart Alerts</h3>
+            <p className="text-slate-600">
+              Get notified about system issues, maintenance needs, and optimization opportunities
+            </p>
+          </div>
+
+          {/* Feature 4 */}
+          <div className="group bg-gradient-to-br from-cyan-50 to-blue-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <BarChart3 className="text-white" size={28} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">Advanced Analytics</h3>
+            <p className="text-slate-600">
+              Deep insights into your energy patterns with detailed charts and performance metrics
+            </p>
+          </div>
+
+          {/* Feature 5 */}
+          <div className="group bg-gradient-to-br from-blue-50 to-cyan-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Sun className="text-white" size={28} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">Weather Integration</h3>
+            <p className="text-slate-600">
+              Automatic weather data integration for accurate forecasting and planning
+            </p>
+          </div>
+
+          {/* Feature 6 */}
+          <div className="group bg-gradient-to-br from-cyan-50 to-blue-50 p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+            <div className="w-14 h-14 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <Activity className="text-white" size={28} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-3">Efficiency Tracking</h3>
+            <p className="text-slate-600">
+              Monitor panel efficiency and identify areas for improvement to maximize output
+            </p>
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="mt-16 text-center">
+          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 max-w-4xl mx-auto">
+            <h3 className="text-3xl font-bold text-white mb-4">Ready to Optimize Your Solar Energy?</h3>
+            <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
+              Join thousands of users who are already maximizing their solar investment with SolarIQ
+            </p>
+            <Link 
+              to="/auth"
+              className="inline-block bg-white text-blue-600 px-8 py-4 rounded-full font-semibold text-lg hover:shadow-xl transition-all hover:-translate-y-1"
+            >
+              Get Started Free
+            </Link>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 

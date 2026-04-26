@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import LocationCard from "./LocationCard";
 import PanelCard from "./PanelCard";
 import DateCard from "./DateCard";
 
 const SetupSection = () => {
+  const navigate = useNavigate();
   const [locationType, setLocationType] = useState("city");
   const [city, setCity] = useState("");
   const [coords, setCoords] = useState(null);
@@ -162,29 +164,38 @@ const SetupSection = () => {
       },
     };
 
-    const res = await fetch("http://localhost:5000/api/solar/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch("http://localhost:5000/api/solar/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await res.json();
-    console.log(data);
+      const data = await res.json();
+      console.log(data);
+      
+      // Navigate to dashboard after successful submission
+      navigate('/dashboard');
+    } catch (error) {
+      setError("Failed to generate prediction. Please try again.");
+      console.error(error);
+    }
   };
 
   return (
-    <section className=" w-full min-h-screen bg-gray-900 text-white flex flex-col items-center py-16 px-4">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold mb-2">Setup Your Solar Forecast</h2>
-        <p className="text-gray-300 max-w-xl mx-auto">
-          Enter your details below to generate an accurate solar energy
-          prediction for your chosen location.
+    <section id="setup-section" className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900 flex flex-col items-center py-24 px-4">
+      <div className="text-center mb-16 max-w-3xl">
+        <h2 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+          Setup Your Solar Forecast
+        </h2>
+        <p className="text-lg text-slate-600">
+          Enter your details below to generate an accurate solar energy prediction for your chosen location using our AI-powered system.
         </p>
       </div>
 
-      <div className="flex flex-col gap-8 w-full max-w-3xl">
+      <div className="flex flex-col gap-8 w-full max-w-4xl">
         <LocationCard
           locationType={locationType}
           setLocationType={setLocationType}
@@ -194,7 +205,7 @@ const SetupSection = () => {
           loading={loading}
           error={error}
           handleCitySearch={handleCitySearch}
-          handleUseCurrentLocation={handleUseCurrentLocation} // ✅ ADDED
+          handleUseCurrentLocation={handleUseCurrentLocation}
           lat={lat}
           setLat={setLat}
           lon={lon}
@@ -220,9 +231,9 @@ const SetupSection = () => {
 
       <button
         onClick={handleSubmit}
-        className="mt-10 px-8 py-3 bg-cyan-600 hover:bg-cyan-700 rounded-full font-semibold transition"
+        className="mt-12 px-10 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-full font-semibold text-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:-translate-y-1"
       >
-        Submit
+        Generate Prediction
       </button>
     </section>
   );

@@ -1,0 +1,8 @@
+client/node_modules
+server/node_modules
+
+## python deps
+ml_model/venv/
+ml_model/__pycache__/
+ml_model/*.pyc
+ml_model/.env

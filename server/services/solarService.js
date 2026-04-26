@@ -1,23 +1,54 @@
+import { fetchWeatherForDateRange } from './weatherService.js';
+import { prepareModelInput } from './featureService.js';
+import axios from 'axios';
+
+const ML_SERVER_URL = 'http://127.0.0.1:5000';
+
 export const calculateSolar = async ({ location, panel, dates }) => {
   const { lat, lon } = location;
-  const { area, tilt } = panel;
+  const { startDate, endDate } = dates;
 
-  // 🔥 Dummy logic (replace later)
-  const baseIrradiance = 5; // kWh/m²/day (avg)
+  try {
+    // Fetch weather data for each day in the date range
+    const weatherDataArray = await fetchWeatherForDateRange(lat, lon, startDate, endDate);
 
-  const dailyEnergy = area * baseIrradiance * 0.2; // efficiency = 20%
+    // Prepare model inputs for each day
+    const modelInputs = weatherDataArray.map((weatherData) => {
+      return prepareModelInput(location, panel, weatherData, weatherData.date);
+    });
 
-  const days =
-    (new Date(dates.endDate) - new Date(dates.startDate)) /
-      (1000 * 60 * 60 * 24) + 1;
+    console.log({weatherDataArray, modelInputs})
 
-  const totalEnergy = dailyEnergy * days;
+    // Call Python ML server for predictions
+    const mlResponse = await axios.post(`${ML_SERVER_URL}/predict`, modelInputs);
+    
+    if (!mlResponse.data.success) {
+      throw new Error(`ML server error: ${mlResponse.data.error}`);
+    }
 
-  return {
-    location,
-    panel,
-    dates,
-    dailyEnergy,
-    totalEnergy,
-  };
+    const predictions = mlResponse.data.predictions;
+
+    // Combine predictions with inputs and add context
+    const results = modelInputs.map((input, index) => ({
+      date: input.day_of_year,
+      input,
+      prediction: predictions[index]
+    }));
+
+    // Calculate total energy
+    const totalEnergy = predictions.reduce((sum, pred) => sum + pred, 0);
+
+    return {
+      location,
+      panel,
+      dates,
+      dailyResults: results,
+      totalDays: modelInputs.length,
+      totalEnergy: Math.round(totalEnergy * 1000) / 1000,
+      averageDailyEnergy: Math.round((totalEnergy / modelInputs.length) * 1000) / 1000
+    };
+  } catch (error) {
+    console.error('Error in calculateSolar:', error);
+    throw error;
+  }
 };

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SolarIQ Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#b6c4ff",
+                        "on-tertiary-fixed-variant": "#5c4300",
+                        "surface-container-highest": "#e0e3e5",
+                        "primary-container": "#1e3a8a",
+                        "on-tertiary-fixed": "#261a00",
+                        "on-tertiary-container": "#d9a300",
+                        "on-primary-container": "#90a8ff",
+                        "on-error-container": "#93000a",
+                        "surface-variant": "#e0e3e5",
+                        "on-secondary-fixed": "#111a37",
+                        "surface": "#f7f9fb",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#dce1ff",
+                        "secondary-container": "#d0d8ff",
+                        "on-secondary-container": "#555e7f",
+                        "on-surface-variant": "#444651",
+                        "inverse-surface": "#2d3133",
+                        "on-surface": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f2f4f6",
+                        "error": "#ba1a1a",
+                        "inverse-on-surface": "#eff1f3",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary": "#555d7e",
+                        "outline": "#757682",
+                        "on-secondary-fixed-variant": "#3d4565",
+                        "background": "#f7f9fb",
+                        "outline-variant": "#c5c5d3",
+                        "secondary-fixed-dim": "#bdc5eb",
+                        "primary": "#00236f",
+                        "tertiary-fixed": "#ffdf9f",
+                        "tertiary": "#382700",
+                        "secondary-fixed": "#dce1ff",
+                        "inverse-primary": "#b6c4ff",
+                        "on-primary-fixed-variant": "#264191",
+                        "on-error": "#ffffff",
+                        "on-background": "#191c1e",
+                        "tertiary-container": "#533c00",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#4059aa",
+                        "on-primary-fixed": "#00164e",
+                        "tertiary-fixed-dim": "#f9bd22",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-container": "#eceef0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- SideNavBar Component -->
+<aside class="hidden md:flex flex-col h-screen w-64 bg-slate-100 dark:bg-slate-900 font-inter text-sm font-medium sticky top-0">
+<div class="p-6">
+<h2 class="text-xs uppercase tracking-widest text-slate-500 mb-1">System Nodes</h2>
+<p class="text-[10px] text-blue-900 dark:text-blue-400 font-bold uppercase">Active Generation</p>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Overview
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+                Grid Status
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="battery_charging_full">battery_charging_full</span>
+                Energy Storage
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="partly_cloudy_day">partly_cloudy_day</span>
+                Weather
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="assessment">assessment</span>
+                Reports
+            </a>
+</nav>
+<div class="p-4 mt-auto">
+<button class="w-full bg-primary-container text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 mb-6 active:scale-95 transition-transform">
+                Optimize Performance
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-white/50 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+                    Support
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-white/50 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+                    Sign Out
+                </a>
+</div>
+</div>
+</aside>
+<div class="flex-1 flex flex-col">
+<!-- TopNavBar Component -->
+<header class="bg-slate-50 dark:bg-slate-950 flex justify-between items-center w-full px-8 py-4 z-10">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-blue-900 dark:text-blue-400">SolarIQ</span>
+<nav class="hidden md:flex items-center gap-6 font-manrope font-bold text-sm tracking-tight">
+<a class="text-slate-500 dark:text-slate-400 hover:text-blue-700 transition-colors active:scale-95 duration-150" href="index.html">Dashboard</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-blue-700 transition-colors active:scale-95 duration-150" href="analytics.html">Analytics</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-blue-700 transition-colors active:scale-95 duration-150" href="alerts.html">Alerts</a>
+<a class="text-blue-900 dark:text-blue-400 border-b-2 border-yellow-500 pb-1 hover:text-blue-700 transition-colors active:scale-95 duration-150" href="settings.html">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="h-10 w-10 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white ring-offset-2 ring-offset-slate-50">
+<img alt="User profile avatar" data-alt="professional headshot of a smiling man with short dark hair in a clean minimalist tech office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHPddqh6nkoc29FLF1jThwhVkkqs8v0NT2GQ-Gnyk9Nh1uoOMbmTsU24_gMK2-V8387A42S-HyNLUcGOYBNXNgMTBU_ZUfJ-iwWKSxPmez7TdJQpwg_LYoVncBnymA7FSbUPpXzzIDxyE8K03rdIO2q3j0T7DLqUAOAK7dD4TbPXBDUq8vOjcfXm6HNUDGCfHefc3uMj5ZpvCJ2dr9LiHxN8xLAzmv736m_Cl43Ia9s-sOsmWQ6fUqgIB4M2mRaWnl85A_WCccG8Ni"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-8 lg:p-12 bg-surface">
+<div class="max-w-6xl mx-auto">
+<div class="mb-12">
+<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-primary mb-2">Account Settings</h1>
+<p class="text-on-surface-variant font-medium">Manage your solar observatory preferences and security.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Profile Settings Card -->
+<section class="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl ring-1 ring-black/[0.03] transition-all">
+<div class="flex flex-col md:flex-row items-start md:items-center gap-8 mb-10">
+<div class="relative group">
+<div class="w-32 h-32 rounded-xl overflow-hidden shadow-lg">
+<img alt="Alex Rivera Profile" data-alt="close-up portrait of a tech professional man named Alex Rivera with soft natural window lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfKVrqGJCoAYKGrfx9fHC2ZsTpLgGRgYDqjcbcpKkhJ-NlhZ-GGaz0trlfO5QcpQUu2oFcHSjVpCVsWZy-atLWQmDAdL5Aibve3Lnu1mOTIyPhp-AOR7wOMYHPr3LQj-j7uQ7glThNaGtJLyMYTnIG5VvxKmkKR2xnXbv7mHs0mQBhAaC3AHd9xN55HnGOwa02PUvIwRtk3c71unUQ21yEjbJ5YZKtDKQs9gF6YrYWvvJjspFSP4S_6DranY1Kj1oWPvKv4wnokMlM"/>
+</div>
+<button class="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-lg shadow-xl active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="flex-1">
+<h3 class="text-2xl font-bold text-primary mb-1">Alex Rivera</h3>
+<p class="text-on-surface-variant mb-4">alex.rivera@solariq.io</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider">System Admin</span>
+<span class="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider">North Sector Node</span>
+</div>
+</div>
+<button class="px-6 py-3 bg-surface-container-low hover:bg-surface-container-high text-primary font-bold rounded-xl transition-all">
+                                Edit Profile
+                            </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase text-on-surface-variant ml-1">Full Name</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-tertiary-fixed-dim focus:ring-0 transition-all px-4 py-3 rounded-t-lg" type="text" value="Alex Rivera"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase text-on-surface-variant ml-1">Email Address</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-tertiary-fixed-dim focus:ring-0 transition-all px-4 py-3 rounded-t-lg" type="email" value="alex.rivera@solariq.io"/>
+</div>
+</div>
+</section>
+<!-- Notification Preferences Card -->
+<section class="bg-surface-container-lowest p-8 rounded-xl ring-1 ring-black/[0.03] flex flex-col">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" data-icon="notifications_active">notifications_active</span>
+<h3 class="text-xl font-bold text-primary">Notifications</h3>
+</div>
+<div class="space-y-8 flex-1">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold text-on-surface">Email Alerts</p>
+<p class="text-xs text-on-surface-variant">Real-time solar status updates</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold text-on-surface">Critical Warnings</p>
+<p class="text-xs text-on-surface-variant">System failure &amp; grid drops</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold text-on-surface">Weekly Digest Reports</p>
+<p class="text-xs text-on-surface-variant">Performance summary on Sundays</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+<button class="mt-10 w-full text-primary font-bold text-sm hover:underline flex items-center justify-center gap-2 group">
+                            Manage all channels
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</button>
+</section>
+<!-- Security / Password Card -->
+<section class="lg:col-span-3 bg-surface-container-lowest p-8 rounded-xl ring-1 ring-black/[0.03]">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-primary" data-icon="security">security</span>
+<h3 class="text-xl font-bold text-primary">Security &amp; Access</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase text-on-surface-variant ml-1">Current password</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-tertiary-fixed-dim focus:ring-0 transition-all px-4 py-3 rounded-t-lg" placeholder="••••••••" type="password"/>
+<span class="material-symbols-outlined absolute right-4 top-3 text-on-surface-variant text-lg cursor-pointer" data-icon="visibility_off">visibility_off</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase text-on-surface-variant ml-1">New password</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-tertiary-fixed-dim focus:ring-0 transition-all px-4 py-3 rounded-t-lg" placeholder="Min. 12 characters" type="password"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold uppercase text-on-surface-variant ml-1">Confirm password</label>
+<input class="w-full bg-surface-container-low border-b-2 border-outline-variant focus:border-tertiary-fixed-dim focus:ring-0 transition-all px-4 py-3 rounded-t-lg" placeholder="Repeat new password" type="password"/>
+</div>
+</div>
+<div class="mt-8 flex flex-col md:flex-row items-center justify-between gap-6">
+<p class="text-sm text-on-surface-variant max-w-lg italic">
+                                Note: Changing your password will log you out of all active devices. Two-factor authentication is recommended for enhanced solar asset protection.
+                            </p>
+<button class="w-full md:w-auto bg-gradient-to-br from-primary to-primary-container text-white px-10 py-4 rounded-xl font-bold shadow-lg hover:shadow-primary/20 active:scale-95 transition-all">
+                                Update Password
+                            </button>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+<!-- Mobile Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest border-t border-black/5 px-6 py-3 flex justify-between items-center z-50">
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+</button>
+<div class="relative -top-8">
+<button class="w-14 h-14 bg-gradient-to-br from-tertiary-fixed-dim to-tertiary-fixed rounded-full shadow-2xl flex items-center justify-center text-on-tertiary-fixed active:scale-90 transition-transform">
+<span class="material-symbols-outlined font-bold" data-icon="bolt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</button>
+</div>
+<button class="flex flex-col items-center gap-1 text-slate-500">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-blue-900 border-b-2 border-yellow-500">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</nav>
+
+<!-- Dynamic Functionality Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
