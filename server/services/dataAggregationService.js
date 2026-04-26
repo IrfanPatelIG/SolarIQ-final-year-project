@@ -7,6 +7,7 @@ import { Op } from "sequelize";
 // Fetch full dataset for a panel
 export const getFullPanelData = async (panelId, startDate, endDate) => {
   const panel = await Panel.findByPk(panelId);
+
   if (!panel) throw new Error("Panel not found");
 
   const location = await Location.findByPk(panel.location_id);

@@ -41,6 +41,13 @@ export const getAlerts = async (req, res) => {
     const { panelId } = req.params;
     const { startDate, endDate } = req.query;
 
+    if (!panelId || isNaN(panelId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid panelId",
+      });
+    }
+
     const data = await getPanelInsightData(panelId, userId, startDate, endDate);
 
     const insights = generateRecommendations({
@@ -54,7 +61,11 @@ export const getAlerts = async (req, res) => {
       alerts: insights.alerts,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.log("❌ Alerts not available for this data, Error")
+    res.status(500).json({
+      success: false,
+      message: `Alerts not available for this data, Error: ${err.message}`,
+    });
   }
 };
 
@@ -64,6 +75,13 @@ export const getRecommendations = async (req, res) => {
     const { panelId } = req.params;
     const { startDate, endDate } = req.query;
 
+    if (!panelId || isNaN(panelId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid panelId",
+      });
+    }
+    
     const data = await getPanelInsightData(panelId, userId, startDate, endDate);
 
     const insights = generateRecommendations({
@@ -77,6 +95,10 @@ export const getRecommendations = async (req, res) => {
       recommendations: insights.recommendations,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.log("❌ Recommendation not available for this data, Error")
+    res.status(500).json({
+      success: false,
+      message: `Recommendation not available for this data, Error: ${err.message}`,
+    });
   }
 };

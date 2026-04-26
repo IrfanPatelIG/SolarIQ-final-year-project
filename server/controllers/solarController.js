@@ -167,7 +167,7 @@ export const getSolarData = async (req, res) => {
 
       // 🖨️ PRINT EACH DAY ENERGY (what you asked)
       console.log(
-        `📅 ${currentDate.toISOString().split("T")[0]} → ⚡ ${dailyEnergy.toFixed(
+        `📅 ${currentDate.toLocaleDateString("en-CA")} → ⚡ ${dailyEnergy.toFixed(
           2
         )} kWh`
       );

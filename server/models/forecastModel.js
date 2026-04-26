@@ -27,6 +27,11 @@ const Forecast = sequelize.define(
     },
   },
   {
+    indexes: [
+      {
+        fields: ["panel_id", "forecast_date"],
+      },
+    ],
     tableName: "forecasted_values",
     timestamps: true, // gives createdAt
     createdAt: "created_at",

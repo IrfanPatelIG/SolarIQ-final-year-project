@@ -51,6 +51,11 @@ const Weather = sequelize.define(
     },
   },
   {
+    indexes: [
+      {
+        fields: ["location_id", "recorded_at"],
+      },
+    ],
     tableName: "weather_data",
     timestamps: true,
     createdAt: "created_at",

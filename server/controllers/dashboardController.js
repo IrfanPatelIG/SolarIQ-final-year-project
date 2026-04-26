@@ -20,6 +20,22 @@ export const getDashboardData = async (req, res) => {
   try {
     const { panelId } = req.params;
     const { startDate, endDate } = req.query;
+    
+    console.log("Requested panelId:", panelId);
+
+    if (isNaN(panelId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid panelId",
+      });
+    }
+
+    if (new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({
+        success: false,
+        message: "startDate cannot be after endDate",
+      });
+    }
 
     if (!req.user) {
       return res.status(401).json({
@@ -27,7 +43,6 @@ export const getDashboardData = async (req, res) => {
         message: "User not authenticated",
       });
     }
-
     const userId = req.user.user_id;
 
     if (!panelId || !startDate || !endDate) {
@@ -44,6 +59,13 @@ export const getDashboardData = async (req, res) => {
       endDate,
     );
 
+    if (!panel) {
+      return res.status(404).json({
+        success: false,
+        message: "Panel not found",
+      });
+    }
+
     // 🔐 USER VALIDATION
     if (panel.user_id !== userId) {
       return res.status(403).json({
@@ -52,7 +74,15 @@ export const getDashboardData = async (req, res) => {
     }
 
     const totalEnergy = calculateTotalEnergy(forecasts);
-    const avgWeather = calculateAvgWeather(weather);
+
+    let avgWeather;
+    let weatherAvailable = true;
+
+    try {
+      avgWeather = calculateAvgWeather(weather);
+    } catch {
+      weatherAvailable = false;
+    }
 
     // 1️⃣ FORECAST
     const forecast = forecasts.map((f) => ({
@@ -67,12 +97,12 @@ export const getDashboardData = async (req, res) => {
     const weatherMap = {};
 
     weather.forEach((w) => {
-      const date = new Date(w.recorded_at).toISOString().split("T")[0];
+      const date = new Date(w.recorded_at).toLocaleDateString("en-CA");
       weatherMap[date] = w;
     });
 
     const weatherImpact = forecasts.map((f) => {
-      const date = new Date(f.forecast_date).toISOString().split("T")[0];
+      const date = new Date(f.forecast_date).toLocaleDateString("en-CA");
       const w = weatherMap[date];
 
       return {
@@ -110,12 +140,26 @@ export const getDashboardData = async (req, res) => {
       where: { user_id: userId },
     });
 
-    const panelPerformance = panels.map((p) => ({
-      panel_id: p.panel_id,
-      tilt: p.tilt,
-      orientation: p.orientation,
-      avg_energy: totalEnergy / forecasts.length,
-    }));
+    const panelPerformance = [];
+
+    for (const p of panels) {
+      const { forecasts: pf } = await getFullPanelData(
+        p.panel_id,
+        startDate,
+        endDate
+      );
+
+      const energy =
+        pf.reduce((sum, f) => sum + f.predicted_energy_kwh, 0) /
+        (pf.length || 1);
+
+      panelPerformance.push({
+        panel_id: p.panel_id,
+        tilt: p.tilt,
+        orientation: p.orientation,
+        avg_energy: energy,
+      });
+    }
 
     // 6️⃣ EFFICIENCY
     const efficiencyData = await calculateEfficiency({
@@ -134,6 +178,8 @@ export const getDashboardData = async (req, res) => {
       totalEnergy,
     });
 
+    console.log("Panel from DB:", panel.panel_id);
+
     res.json({
       success: true,
       data: {
@@ -146,6 +192,9 @@ export const getDashboardData = async (req, res) => {
         },
         efficiency: efficiencyData.efficiency,
         insights,
+      },
+      meta: {
+        weatherAvailable,
       },
     });
   } catch (err) {

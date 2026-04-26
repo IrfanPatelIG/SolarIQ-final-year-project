@@ -21,7 +21,13 @@ export const calculateEfficiency = async ({ panelId, startDate, endDate }) => {
   const totalEnergy = calculateTotalEnergy(forecasts);
   const avgEnergy = totalEnergy / forecasts.length;
 
-  const avgWeather = calculateAvgWeather(weather);
+  let avgWeather;
+
+  try {
+    avgWeather = calculateAvgWeather(weather);
+  } catch {
+    throw new Error("Weather data required for efficiency calculation");
+  }
 
   // 🔥 SAFE FALLBACK
   if (!avgWeather) {
