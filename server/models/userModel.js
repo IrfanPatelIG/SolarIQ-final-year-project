@@ -24,6 +24,9 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     defaultValue: "user",
   },
+  refresh_token: {
+    type: DataTypes.TEXT,
+  },
 }, {
   tableName: "users",
   timestamps: true,

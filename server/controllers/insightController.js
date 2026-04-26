@@ -1,8 +1,8 @@
-import Forecast from "../models/forecastModel.js";
-import Weather from "../models/weatherModel.js";
-import Panel from "../models/panelModel.js";
-import Location from "../models/locationModel.js";
-import { Op } from "sequelize";
+import {
+  getFullPanelData,
+  calculateTotalEnergy,
+  calculateAvgWeather,
+} from "../services/dataAggregationService.js";
 
 import {
   getTiltFactor,
@@ -12,115 +12,36 @@ import {
 import { generateRecommendations } from "../services/recommendationService.js";
 
 // 🧠 CENTRALIZED FUNCTION
-const getPanelInsightData = async (userId, startDate, endDate) => {
-  // 1️⃣ Panel
-  const panel = await Panel.findOne({
-    where: { user_id : userId }
-  });
+const getPanelInsightData = async (panelId, userId, startDate, endDate) => {
+  const { panel, location, forecasts, weather } = await getFullPanelData(panelId, startDate, endDate);
 
-  if (!panel) {
-    throw new Error("Panel not found");
+  if (panel.user_id !== userId) {
+    throw new Error("Unauthorized panel access");
   }
 
-  // 2️⃣ Location
-  const location = await Location.findByPk(panel.location_id);
+  const totalEnergy = calculateTotalEnergy(forecasts);
+  const avgWeather = calculateAvgWeather(weather);
 
-  if (!location) {
-    throw new Error("Location not found");
-  }
-
-  // 3️⃣ Forecast (filtered)
-  const forecasts = await Forecast.findAll({
-    where: {
-      panel_id: panel.panel_id,
-      forecast_date: {
-        [Op.between]: [startDate, endDate],
-      },
-    },
-  });
-
-  // 4️⃣ Total energy
-  const totalEnergy = forecasts.reduce(
-    (sum, f) => sum + f.predicted_energy_kwh,
-    0
-  );
-
-  // 5️⃣ Weather (date-safe range)
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
-
-  const weatherData = await Weather.findAll({
-    where: {
-      location_id: location.location_id,
-      recorded_at: {
-        [Op.between]: [start, end],
-      },
-    },
-  });
-
-  let avgWeather;
-
-  if (!weatherData.length) {
-    console.log("⚠️ No weather in range → using latest weather");
-
-    const latestWeather = await Weather.findOne({
-      where: { location_id: location.location_id },
-      order: [["createdAt", "DESC"]],
-    });
-
-    avgWeather = {
-      cloud_cover: latestWeather?.cloud_cover || 0,
-      temperature: latestWeather?.temperature || 25,
-      wind_speed: latestWeather?.wind_speed || 0,
-      precipitation: latestWeather?.precipitation || 0,
-    };
-  } else {
-    avgWeather = {
-      cloud_cover:
-        weatherData.reduce((sum, w) => sum + w.cloud_cover, 0) /
-        weatherData.length,
-
-      temperature:
-        weatherData.reduce((sum, w) => sum + w.temperature, 0) /
-        weatherData.length,
-
-      wind_speed:
-        weatherData.reduce((sum, w) => sum + w.wind_speed, 0) /
-        weatherData.length,
-
-      precipitation:
-        weatherData.reduce((sum, w) => sum + w.precipitation, 0) /
-        weatherData.length,
-    };
-  }
-
-  // 6️⃣ Factors
   const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
   const orientationFactor = getOrientationFactor(panel.orientation);
-
-  const factors = {
-    tiltFactor,
-    orientationFactor,
-  };
 
   return {
     totalEnergy,
     avgWeather,
-    factors,
+    factors: {
+      tiltFactor,
+      orientationFactor,
+    },
   };
 };
 
 export const getAlerts = async (req, res) => {
   try {
     const userId = req.user.user_id;
+    const { panelId } = req.params;
     const { startDate, endDate } = req.query;
 
-    const data = await getPanelInsightData(
-      userId,
-      startDate,
-      endDate
-    );
+    const data = await getPanelInsightData(panelId, userId, startDate, endDate);
 
     const insights = generateRecommendations({
       weather: data.avgWeather,
@@ -132,7 +53,6 @@ export const getAlerts = async (req, res) => {
       success: true,
       alerts: insights.alerts,
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -141,13 +61,10 @@ export const getAlerts = async (req, res) => {
 export const getRecommendations = async (req, res) => {
   try {
     const userId = req.user.user_id;
+    const { panelId } = req.params;
     const { startDate, endDate } = req.query;
 
-    const data = await getPanelInsightData(
-      userId,
-      startDate,
-      endDate
-    );
+    const data = await getPanelInsightData(panelId, userId, startDate, endDate);
 
     const insights = generateRecommendations({
       weather: data.avgWeather,
@@ -159,7 +76,6 @@ export const getRecommendations = async (req, res) => {
       success: true,
       recommendations: insights.recommendations,
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

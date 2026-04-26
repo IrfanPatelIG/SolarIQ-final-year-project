@@ -1,99 +1,94 @@
-import { Forecast } from "../models/index.js";
-import { Op } from "sequelize";
-
 import {
-  calculateEfficiency
-} from "../services/efficiencyService.js";
+  getFullPanelData,
+  calculateTotalEnergy,
+  calculateAvgWeather,
+} from "../services/dataAggregationService.js";
 
-import {
-  generateRecommendations
-} from "../services/recommendationService.js";
+import { calculateEfficiency } from "../services/efficiencyService.js";
+
+import { generateRecommendations } from "../services/recommendationService.js";
 
 import {
   getTiltFactor,
-  getOrientationFactor
+  getOrientationFactor,
 } from "../services/solarService.js";
 
-import Weather from "../models/weatherModel.js";
 import Panel from "../models/panelModel.js";
-import Location from "../models/locationModel.js";
 
 // 🔥 MAIN DASHBOARD CONTROLLER
 export const getDashboardData = async (req, res) => {
   try {
     const { panelId } = req.params;
-    
+    const { startDate, endDate } = req.query;
+
     if (!req.user) {
       return res.status(401).json({
         success: false,
         message: "User not authenticated",
       });
     }
-    console.log("USER:", req.user);
+
     const userId = req.user.user_id;
-    const { startDate, endDate } = req.query;
 
     if (!panelId || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: "panelId, startDate and endDate required"
+        message: "panelId, startDate and endDate required",
       });
     }
 
-    // 🔐 USER VALIDATION
-    const panel = await Panel.findOne({
-      where: {
-        panel_id: panelId,
-        user_id: userId,
-      },
-    });
+    // 🔥 CENTRALIZED DATA FETCH
+    const { panel, location, forecasts, weather } = await getFullPanelData(
+      panelId,
+      startDate,
+      endDate,
+    );
 
-    if (!panel) {
+    // 🔐 USER VALIDATION
+    if (panel.user_id !== userId) {
       return res.status(403).json({
         message: "Unauthorized: Panel does not belong to this user",
       });
     }
 
-    // 1️⃣ FORECAST DATA
-    const forecasts = await Forecast.findAll({
-      where: {
-        panel_id: panelId,
-        forecast_date: {
-          [Op.between]: [startDate, endDate]
-        }
-      },
-      include: [{
-        model: Panel,
-        attributes: [],
-        where: { user_id: userId }, // 🔥 USER FILTER
-      }],
-      order: [["forecast_date", "ASC"]]
-    });
+    const totalEnergy = calculateTotalEnergy(forecasts);
+    const avgWeather = calculateAvgWeather(weather);
 
-    const forecast = forecasts.map(f => ({
+    // 1️⃣ FORECAST
+    const forecast = forecasts.map((f) => ({
       date: f.forecast_date,
-      energy: f.predicted_energy_kwh
+      energy: f.predicted_energy_kwh,
     }));
 
     // 2️⃣ DAILY ENERGY
     const dailyEnergy = forecast;
 
-    // 3️⃣ WEATHER IMPACT
-    const weatherData = await Weather.findAll();
+    // 3️⃣ WEATHER IMPACT (FIXED MAPPING)
+    const weatherMap = {};
 
-    const weatherImpact = forecasts.map((f, i) => ({
-      date: f.forecast_date,
-      energy: f.predicted_energy_kwh,
-      temperature: weatherData[i]?.temperature || 0,
-      cloud_cover: weatherData[i]?.cloud_cover || 0
-    }));
+    weather.forEach((w) => {
+      const date = new Date(w.recorded_at).toISOString().split("T")[0];
+      weatherMap[date] = w;
+    });
+
+    const weatherImpact = forecasts.map((f) => {
+      const date = new Date(f.forecast_date).toISOString().split("T")[0];
+      const w = weatherMap[date];
+
+      return {
+        date: f.forecast_date,
+        energy: f.predicted_energy_kwh,
+        temperature: w?.temperature || 0,
+        cloud_cover: w?.cloud_cover || 0,
+      };
+    });
 
     // 4️⃣ DISTRIBUTION
     const distributionMap = {};
 
-    forecasts.forEach(f => {
+    forecasts.forEach((f) => {
       const day = new Date(f.forecast_date).toLocaleString("en-US", {
-        weekday: "long"
+        weekday: "long",
       });
 
       if (!distributionMap[day]) {
@@ -103,94 +98,62 @@ export const getDashboardData = async (req, res) => {
       distributionMap[day].push(f.predicted_energy_kwh);
     });
 
-    const distribution = Object.keys(distributionMap).map(day => ({
+    const distribution = Object.keys(distributionMap).map((day) => ({
       day,
       avg_energy:
         distributionMap[day].reduce((a, b) => a + b, 0) /
-        distributionMap[day].length
+        distributionMap[day].length,
     }));
 
-    // 5️⃣ PANEL PERFORMANCE (🔥 FIXED USER FILTER)
+    // 5️⃣ PANEL PERFORMANCE
     const panels = await Panel.findAll({
-      where: { user_id: userId } // 🔥 IMPORTANT
+      where: { user_id: userId },
     });
 
-    const panelPerformance = panels.map(p => ({
+    const panelPerformance = panels.map((p) => ({
       panel_id: p.panel_id,
       tilt: p.tilt,
       orientation: p.orientation,
-      avg_energy:
-        forecasts.reduce((sum, f) => sum + f.predicted_energy_kwh, 0) /
-        forecasts.length
+      avg_energy: totalEnergy / forecasts.length,
     }));
 
     // 6️⃣ EFFICIENCY
     const efficiencyData = await calculateEfficiency({
       panelId,
       startDate,
-      endDate
+      endDate,
     });
 
-    // 7️⃣ INSIGHTS (🔥 FIXED WITHOUT BREAKING LOGIC)
-    const location = await Location.findByPk(panel.location_id);
-
+    // 7️⃣ INSIGHTS
     const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
     const orientationFactor = getOrientationFactor(panel.orientation);
-
-    const totalEnergy = forecasts.reduce(
-      (sum, f) => sum + f.predicted_energy_kwh,
-      0
-    );
-
-    const avgWeather = {
-      cloud_cover:
-        weatherData.reduce((s, w) => s + (w.cloud_cover || 0), 0) /
-        weatherData.length,
-
-      temperature:
-        weatherData.reduce((s, w) => s + (w.temperature || 0), 0) /
-        weatherData.length,
-
-      wind_speed:
-        weatherData.reduce((s, w) => s + (w.wind_speed || 0), 0) /
-        weatherData.length,
-
-      precipitation:
-        weatherData.reduce((s, w) => s + (w.precipitation || 0), 0) /
-        weatherData.length
-    };
 
     const insights = generateRecommendations({
       weather: avgWeather,
       factors: { tiltFactor, orientationFactor },
-      totalEnergy
+      totalEnergy,
     });
 
-    // ✅ FINAL RESPONSE
     res.json({
       success: true,
       data: {
         forecast,
-
         analytics: {
           dailyEnergy,
           weatherImpact,
           distribution,
-          panelPerformance
+          panelPerformance,
         },
-
         efficiency: efficiencyData.efficiency,
-
-        insights
-      }
+        insights,
+      },
     });
-
   } catch (err) {
     console.error("❌ Dashboard Error:", err);
 
     res.status(500).json({
       success: false,
-      message: "Dashboard fetch failed"
+      message: "Dashboard fetch failed",
     });
   }
 };

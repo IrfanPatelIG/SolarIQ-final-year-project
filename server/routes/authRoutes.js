@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser } from "../controllers/authController.js";
+import { registerUser, loginUser, refreshTokenHandler, logoutUser } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
 
@@ -7,6 +7,8 @@ const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/refresh", refreshTokenHandler);
+router.post("/logout", logoutUser);
 
 router.get("/admin-data", protect, authorizeRoles("admin"), (req, res) => {
     console.log("User from token: ", req.user);  // 👈 ADD THIS

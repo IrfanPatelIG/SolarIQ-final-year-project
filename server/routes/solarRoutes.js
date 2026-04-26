@@ -5,7 +5,7 @@ import { protect } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // Main - POST: /api/solar
-router.post("/", getSolarData);
+router.post("/", protect, getSolarData);
 
 
 router.get("/test", protect, (req, res) => {

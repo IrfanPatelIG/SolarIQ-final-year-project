@@ -4,8 +4,10 @@ import {
   calculateSolar,
   getSeasonalFactor,
 } from "../services/solarService.js";
+import sequelize from "../config/db.js";
 
 export const getSolarData = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { location, panel, dates } = req.body;
 
@@ -65,7 +67,15 @@ export const getSolarData = async (req, res) => {
     const timezone = weatherRes.data?.timezone || null;
 
     // 💾 2) SAVE LOCATION (FULL DATA)
-    const userId = 1;
+    const user_id = req.user.user_id;
+
+    if (!user_id) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+    console.log("Authenticated User:", req.user);
 
     const savedLocation = await Location.create({
       latitude: lat,
@@ -74,8 +84,8 @@ export const getSolarData = async (req, res) => {
       state,
       country,
       timezone,
-      user_id: userId
-    });
+      user_id: user_id
+    }, { transaction: t });
 
     console.log("✅ Location saved:", savedLocation.toJSON());
 
@@ -104,7 +114,7 @@ export const getSolarData = async (req, res) => {
       precipitation: precipitation,
       air_pressure: air_pressure,
       recorded_at: new Date(),
-    });
+    }, { transaction: t });
 
     console.log("✅ Weather saved:", savedWeather.toJSON());
 
@@ -115,8 +125,8 @@ export const getSolarData = async (req, res) => {
       orientation: panel.orientation,
       installation_date: null, // optional for now
       location_id: savedLocation.location_id,
-      user_id: userId
-    });
+      user_id: user_id
+    }, { transaction: t });
 
     console.log("✅ Panel saved:", savedPanel.toJSON());
 
@@ -175,9 +185,11 @@ export const getSolarData = async (req, res) => {
     console.log(`\n🔋 Total Energy: ${totalEnergy.toFixed(2)} kWh\n`);
 
     // 💾 Save
-    await Forecast.bulkCreate(forecasts);
+    await Forecast.bulkCreate(forecasts, { transaction: t });
 
     console.log("✅ Forecast data saved");
+
+    await t.commit();
 
     // ✅ 7) RESPONSE
     res.json({
@@ -202,12 +214,13 @@ export const getSolarData = async (req, res) => {
       },
     });
 
-  } catch (error) {
-    console.error("❌ Controller Error:", error);
+  } catch (err) {
+    await t.rollback();
+    console.error("❌ Transaction rolled back:", err);
 
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Server Error: Solar data processing failed",
     });
   }
 };

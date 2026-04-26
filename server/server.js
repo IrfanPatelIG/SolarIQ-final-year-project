@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import sequelize from "./config/db.js";
-
 import "./models/index.js";
 
 // Routes
@@ -13,6 +12,8 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import insightRoutes from "./routes/insightRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 
+dotenv.config();
+
 const app = express();
 const PORT = 5000;
 
@@ -20,7 +21,6 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
-dotenv.config();
 
 // DB
 await connectDB();
@@ -29,7 +29,7 @@ await sequelize.sync()
   .then(() => console.log("✅ Tables synced"))
   .catch(err => console.error("❌ DB Tables Sync error:", err));
 
-  
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/solar", solarRoutes);
