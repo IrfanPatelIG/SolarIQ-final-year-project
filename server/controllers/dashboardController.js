@@ -3,16 +3,13 @@ import {
   calculateTotalEnergy,
   calculateAvgWeather,
 } from "../services/dataAggregationService.js";
-
+import { getSelectedDayEnergy } from "../helpers/dashboardHelper.js";
 import { calculateEfficiency } from "../services/efficiencyService.js";
-
 import { generateRecommendations } from "../services/recommendationService.js";
-
 import {
   getTiltFactor,
   getOrientationFactor,
 } from "../services/solarService.js";
-
 import Panel from "../models/panelModel.js";
 
 // 🔥 MAIN DASHBOARD CONTROLLER
@@ -87,8 +84,13 @@ export const getDashboardData = async (req, res) => {
     // 1️⃣ FORECAST
     const forecast = forecasts.map((f) => ({
       date: f.forecast_date,
-      energy: f.predicted_energy_kwh,
+      energy: Number(f.predicted_energy_kwh.toFixed(2)),
     }));
+
+    const selectedDayEnergy = getSelectedDayEnergy(
+      forecasts,
+      startDate
+    );
 
     // 2️⃣ DAILY ENERGY
     const dailyEnergy = forecast;
@@ -183,6 +185,7 @@ export const getDashboardData = async (req, res) => {
     res.json({
       success: true,
       data: {
+        heroCard: selectedDayEnergy,
         forecast,
         analytics: {
           dailyEnergy,

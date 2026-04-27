@@ -30,7 +30,6 @@ export const getSolarData = async (req, res) => {
       });
     }
 
-    
     // 🌍 FETCH LOCATION DETAILS FROM API
     const geoRes = await axios.get(
       `http://api.openweathermap.org/geo/1.0/reverse`,
@@ -50,9 +49,9 @@ export const getSolarData = async (req, res) => {
     const state = geoData?.state || null;
     const country = geoData?.country || null;
 
-    // 🌦 1) Fetch weather data
-    const weatherRes = await axios.get(
-      `https://api.openweathermap.org/data/2.5/weather`,
+    // 🌦 FETCH FORECAST DATA (3-hour intervals)
+    const forecastRes = await axios.get(
+      `https://api.openweathermap.org/data/2.5/forecast`,
       {
         params: {
           lat,
@@ -63,10 +62,59 @@ export const getSolarData = async (req, res) => {
       }
     );
 
-    // ⏱️ TIMEZONE (from weather API)
-    const timezone = weatherRes.data?.timezone || null;
+    const forecastList = forecastRes.data.list;
 
-    // 💾 2) SAVE LOCATION (FULL DATA)
+    // ⏱️ TIMEZONE FIX
+    const timezone = forecastRes.data?.city?.timezone || null;
+
+    // 🧠 GROUP INTO DAILY WEATHER
+    const dailyWeatherMap = {};
+
+    forecastList.forEach((entry) => {
+      const date = entry.dt_txt.split(" ")[0];
+
+      if (!dailyWeatherMap[date]) {
+        dailyWeatherMap[date] = {
+          temps: [],
+          clouds: [],
+          humidity: [],
+          wind: [],
+          pressure: [],
+          rain: [],
+        };
+      }
+
+      dailyWeatherMap[date].temps.push(entry.main.temp);
+      dailyWeatherMap[date].clouds.push(entry.clouds.all);
+      dailyWeatherMap[date].humidity.push(entry.main.humidity);
+      dailyWeatherMap[date].wind.push(entry.wind.speed);
+      dailyWeatherMap[date].pressure.push(entry.main.pressure);
+      dailyWeatherMap[date].rain.push(entry.rain?.["3h"] || 0);
+    });
+
+    // 📊 CONVERT TO DAILY AVERAGE
+    const dailyWeather = Object.keys(dailyWeatherMap).map((date) => {
+      const d = dailyWeatherMap[date];
+
+      const avg = (arr) =>
+        arr.reduce((a, b) => a + b, 0) / arr.length;
+
+      return {
+        date,
+        temperature: avg(d.temps),
+        cloud_cover: avg(d.clouds),
+        humidity: avg(d.humidity),
+        wind_speed: avg(d.wind),
+        air_pressure: avg(d.pressure),
+        precipitation: avg(d.rain),
+      };
+    });
+
+    // 📅 DATE RANGE FIX
+    const start = new Date(dates.startDate);
+    const end = new Date(dates.endDate);
+
+    // 💾 SAVE LOCATION
     const user_id = req.user.user_id;
 
     if (!user_id) {
@@ -75,7 +123,6 @@ export const getSolarData = async (req, res) => {
         message: "User not authenticated",
       });
     }
-    console.log("Authenticated User:", req.user);
 
     const savedLocation = await Location.create({
       latitude: lat,
@@ -84,132 +131,101 @@ export const getSolarData = async (req, res) => {
       state,
       country,
       timezone,
-      user_id: user_id
+      user_id: user_id,
     }, { transaction: t });
 
-    console.log("✅ Location saved:", savedLocation.toJSON());
-
-    // ⚡* Calculate irradiance
-    const w = weatherRes.data;
-
-    // 🌡 Extract weather values
-    const temperature = w.main?.temp;
-    const humidity = w.main?.humidity;
-    const wind_speed = w.wind?.speed;
-    const cloud_cover = w.clouds?.all;
-    const precipitation = w.rain?.["1h"] || 0;
-    const air_pressure = w.main?.pressure;
-
-    // ☀️ Solar irradiance calculation
-    const solar_irradiance = 1000 * (1 - cloud_cover / 100);
-
-    // 💾 3) Save Weather
-    const savedWeather = await Weather.create({
-      location_id: savedLocation.location_id,
-      temperature: temperature,
-      humidity: humidity,
-      solar_irradiance,
-      cloud_cover: cloud_cover,
-      wind_speed: wind_speed,
-      precipitation: precipitation,
-      air_pressure: air_pressure,
-      recorded_at: new Date(),
-    }, { transaction: t });
-
-    console.log("✅ Weather saved:", savedWeather.toJSON());
-
-    // 💾 4) SAVE PANEL (linked)
+    // 💾 SAVE PANEL
     const savedPanel = await Panel.create({
       area: panel.area,
       tilt: panel.tilt,
       orientation: panel.orientation,
-      installation_date: null, // optional for now
+      installation_date: null,
       location_id: savedLocation.location_id,
-      user_id: user_id
+      user_id: user_id,
     }, { transaction: t });
 
-    console.log("✅ Panel saved:", savedPanel.toJSON());
-
-
-    // ⚡5) Solar calculation from solarService.js (ML Output)
-    // ⚡ Base calculation
-    const result = await calculateSolar({
+    // 🔧 BASE FACTORS (fix for scope issue)
+    const baseResult = await calculateSolar({
       location,
       panel,
-      weather: savedWeather,
+      weather: { solar_irradiance: 1000 },
     });
-      // Bcz all "location, panel & dates" are comming directly from API call from frontend, 
-      // But for weather we are fetching this at Backend itself therefor we specified this separately with "savedWeather"
 
-
-    // 📅 6) SAVING FORECAST DATA | Generate date range
-    // 📅 Date loop
-    const start = new Date(dates.startDate);
-    const end = new Date(dates.endDate);
-
-    let currentDate = new Date(start);
-
+    // 💾 PROCESS DAILY WEATHER + FORECAST
     const forecasts = [];
-
     let totalEnergy = 0;
 
-    while (currentDate <= end) {
+    for (const dayData of dailyWeather) {
+      const currentDate = new Date(dayData.date);
+
+      if (currentDate < start || currentDate > end) continue;
+
+      const solar_irradiance = 1000 * (1 - dayData.cloud_cover / 100);
+
+      const tempWeather = {
+        solar_irradiance,
+      };
+
+      const result = await calculateSolar({
+        location,
+        panel,
+        weather: tempWeather,
+      });
+
       const seasonalFactor = getSeasonalFactor(currentDate);
 
       const dailyEnergy =
-        result.baseEnergy *
-        seasonalFactor *
-        result.factors.tiltFactor *
-        result.factors.orientationFactor;
+        result.baseEnergy * seasonalFactor;
 
-      // 🧮 Add to total
       totalEnergy += dailyEnergy;
 
-      // 🖨️ PRINT EACH DAY ENERGY (what you asked)
-      console.log(
-        `📅 ${currentDate.toLocaleDateString("en-CA")} → ⚡ ${dailyEnergy.toFixed(
-          2
-        )} kWh`
-      );
+      // 💾 SAVE WEATHER (PER DAY)
+      await Weather.create({
+        location_id: savedLocation.location_id,
+        temperature: dayData.temperature,
+        humidity: dayData.humidity,
+        solar_irradiance,
+        cloud_cover: dayData.cloud_cover,
+        wind_speed: dayData.wind_speed,
+        precipitation: dayData.precipitation,
+        air_pressure: dayData.air_pressure,
+        recorded_at: currentDate,
+      }, { transaction: t });
 
+      // 💾 SAVE FORECAST
       forecasts.push({
-        forecast_date: new Date(currentDate),
+        forecast_date: currentDate,
         predicted_energy_kwh: dailyEnergy,
         location_id: savedLocation.location_id,
         panel_id: savedPanel.panel_id,
-        model_version: "v2",
+        model_version: "v3",
       });
-
-      currentDate.setDate(currentDate.getDate() + 1);
     }
-    console.log(`\n🔋 Total Energy: ${totalEnergy.toFixed(2)} kWh\n`);
 
-    // 💾 Save
+    // 💾 SAVE FORECAST
     await Forecast.bulkCreate(forecasts, { transaction: t });
-
-    console.log("✅ Forecast data saved");
 
     await t.commit();
 
-    // ✅ 7) RESPONSE
+    // ✅ RESPONSE
     res.json({
       success: true,
       message: "Data processed successfully",
-      forecast: forecasts.map(f => ({
+      forecast: forecasts.map((f) => ({
         date: f.forecast_date,
-        energy: f.predicted_energy_kwh
-      })),   // daily values
+        energy: f.predicted_energy_kwh,
+      })),
       summary: {
         totalEnergy: totalEnergy,
         days: forecasts.length,
       },
       factors: {
-        tiltFactor: result.factors.tiltFactor,
-        orientationFactor: result.factors.orientationFactor,
+        tiltFactor: baseResult.factors.tiltFactor,
+        orientationFactor: baseResult.factors.orientationFactor,
       },
       db: {
         location: savedLocation,
-        weather: savedWeather,
+        weather: "Stored per-day weather",
         panel: savedPanel,
       },
     });

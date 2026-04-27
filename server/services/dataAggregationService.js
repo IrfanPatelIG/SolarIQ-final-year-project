@@ -8,7 +8,9 @@ import { Op } from "sequelize";
 export const getFullPanelData = async (panelId, startDate, endDate) => {
   const panel = await Panel.findByPk(panelId);
 
-  if (!panel) throw new Error("Panel not found");
+  if (!panel) {
+    return "Panel not found";
+  }
 
   const location = await Location.findByPk(panel.location_id);
 
@@ -37,7 +39,7 @@ export const getFullPanelData = async (panelId, startDate, endDate) => {
   });
 
   if (!weather.length) {
-    throw new Error("No weather data available for this date range");
+    return ("No weather data available for this date range");
   }
 
   return { panel, location, forecasts, weather };
@@ -54,16 +56,16 @@ export const calculateAvgWeather = (weatherData) => {
     throw new Error("Cannot calculate average weather: no data");
   }
 
+  const avg = (field) =>
+    weatherData.reduce((sum, row) => sum + (row[field] || 0), 0) /
+    weatherData.length;
+
   return {
-    temperature:
-      weatherData.reduce((sum, w) => sum + w.temperature, 0) /
-      weatherData.length,
-
-    cloud_cover:
-      weatherData.reduce((sum, w) => sum + w.cloud_cover, 0) /
-      weatherData.length,
-
-    humidity:
-      weatherData.reduce((sum, w) => sum + w.humidity, 0) / weatherData.length,
+    temperature: avg("temperature"),
+    cloud_cover: avg("cloud_cover"),
+    humidity: avg("humidity"),
+    precipitation: avg("precipitation"),
+    wind_speed: avg("wind_speed"),
+    air_pressure: avg("air_pressure"),
   };
 };

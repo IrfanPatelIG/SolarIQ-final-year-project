@@ -1,77 +1,166 @@
 import {
   getFullPanelData,
   calculateTotalEnergy,
-  calculateAvgWeather,
 } from "./dataAggregationService.js";
 
-import { getTiltFactor, getOrientationFactor } from "./solarService.js";
+import {
+  getTiltFactor,
+  getOrientationFactor,
+} from "./solarService.js";
 
-// 🚀 MAIN FUNCTION
-export const calculateEfficiency = async ({ panelId, startDate, endDate }) => {
-  const { panel, location, forecasts, weather } = await getFullPanelData(
-    panelId,
-    startDate,
-    endDate,
-  );
+// ---------- Helpers ----------
+const clamp = (num, min = 0, max = 100) =>
+  Math.max(min, Math.min(max, num));
+
+const round = (num) => Math.round(num);
+
+// Performance label
+const getPerformance = (score) => {
+  if (score >= 76) return "Good";
+  if (score >= 51) return "Moderate";
+  return "Poor";
+};
+
+// Build YYYY-MM-DD key
+const getDateKey = (value) => {
+  return new Date(value).toLocaleDateString("en-CA");
+};
+
+// ---------- Main ----------
+export const calculateEfficiency = async ({
+  panelId,
+  startDate,
+  endDate,
+}) => {
+  const { panel, location, forecasts, weather } =
+    await getFullPanelData(panelId, startDate, endDate);
 
   if (!forecasts.length) {
     throw new Error("No forecast data for this range");
   }
 
+  // Panel constants
+  const tiltFactor = getTiltFactor(
+    panel.tilt,
+    location.latitude
+  );
+
+  const orientationFactor =
+    getOrientationFactor(panel.orientation);
+
+  const panelScore = clamp(
+    ((tiltFactor + orientationFactor) / 2) * 100
+  );
+
+  // Weather lookup by date
+  const weatherMap = {};
+
+  weather.forEach((row) => {
+    const key = getDateKey(row.recorded_at);
+    weatherMap[key] = row;
+  });
+
+  // ---------- Daily Scores ----------
+  const daily = [];
+
+  for (const day of forecasts) {
+    const dateKey = getDateKey(day.forecast_date);
+    const w = weatherMap[dateKey];
+
+    // If no weather row, skip that day
+    if (!w) continue;
+
+    // Energy Score
+    const idealEnergy = 10;
+
+    const energyScore = clamp(
+      (day.predicted_energy_kwh / idealEnergy) * 100
+    );
+
+    // Weather Score
+    const weatherScore = clamp(
+      100 -
+        (
+          (w.cloud_cover || 0) * 0.5 +
+          (w.precipitation || 0) * 2 +
+          Math.abs((w.temperature || 25) - 25)
+        )
+    );
+
+    // Final Daily Efficiency
+    const efficiencyScore = clamp(
+      energyScore * 0.5 +
+        weatherScore * 0.3 +
+        panelScore * 0.2
+    );
+
+    daily.push({
+      date: dateKey,
+      efficiencyScore: round(efficiencyScore),
+      performance: getPerformance(
+        round(efficiencyScore)
+      ),
+      breakdown: {
+        energyScore: round(energyScore),
+        weatherScore: round(weatherScore),
+        panelScore: round(panelScore),
+      },
+    });
+  }
+
+  if (!daily.length) {
+    throw new Error(
+      "No weather-matched daily efficiency data found"
+    );
+  }
+
+  // ---------- Overall ----------
+  const overallEfficiency =
+    daily.reduce(
+      (sum, row) => sum + row.efficiencyScore,
+      0
+    ) / daily.length;
+
   const totalEnergy = calculateTotalEnergy(forecasts);
   const avgEnergy = totalEnergy / forecasts.length;
 
-  let avgWeather;
+  const avgEnergyScore =
+    daily.reduce(
+      (sum, row) =>
+        sum + row.breakdown.energyScore,
+      0
+    ) / daily.length;
 
-  try {
-    avgWeather = calculateAvgWeather(weather);
-  } catch {
-    throw new Error("Weather data required for efficiency calculation");
-  }
-
-  // 🔥 SAFE FALLBACK
-  if (!avgWeather) {
-    console.log("⚠️ No weather data → using default values");
-  }
-
-  // FACTORS (NOW CONSISTENT)
-  const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
-  const orientationFactor = getOrientationFactor(panel.orientation);
-
-  // 🟡 Energy Score
-  const idealEnergy = 10;
-  const energyScore = Math.min((avgEnergy / idealEnergy) * 100, 100);
-
-  // 🟡 Weather Score
-  const weatherScore =
-    100 -
-    (avgWeather.cloud_cover * 0.5 +
-      avgWeather.precipitation * 2 +
-      Math.abs(avgWeather.temperature - 25));
-
-  // 🟡 Panel Score
-  const panelScore = ((tiltFactor + orientationFactor) / 2) * 100;
-
-  // 🟡 Final Efficiency
-  const efficiencyScore =
-    energyScore * 0.5 + weatherScore * 0.3 + panelScore * 0.2;
-
-  let performance = "Poor";
-  if (efficiencyScore > 75) performance = "Good";
-  else if (efficiencyScore > 50) performance = "Moderate";
+  const avgWeatherScore =
+    daily.reduce(
+      (sum, row) =>
+        sum + row.breakdown.weatherScore,
+      0
+    ) / daily.length;
 
   return {
-    panel_id: panelId,
-    totalEnergy,
-    avgEnergy,
+    panel_id: Number(panelId),
+    totalEnergy: Number(totalEnergy.toFixed(2)),
+    avgEnergy: Number(avgEnergy.toFixed(2)),
+
     efficiency: {
-      efficiencyScore: Math.round(efficiencyScore),
-      performance,
-      breakdown: {
-        energyScore: Math.round(energyScore),
-        weatherScore: Math.round(weatherScore),
-        panelScore: Math.round(panelScore),
+      overall: {
+        efficiencyScore: round(
+          overallEfficiency
+        ),
+        performance: getPerformance(
+          round(overallEfficiency)
+        ),
+        breakdown: {
+          energyScore: round(avgEnergyScore),
+          weatherScore: round(
+            avgWeatherScore
+          ),
+          panelScore: round(panelScore),
+        },
       },
+
+      daily,
     },
   };
 };
