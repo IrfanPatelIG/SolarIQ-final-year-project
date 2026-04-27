@@ -1,2 +1,17 @@
-export const logInfo = (...args) => console.log("Info: ", ...args);
-export const logError = (...args) => console.error("Error: ", ...args);
+export const logger = {
+  info: (...args) => {
+    console.log("ℹ️ INFO:", ...args);
+  },
+
+  success: (...args) => {
+    console.log("✅ SUCCESS:", ...args);
+  },
+
+  warn: (...args) => {
+    console.warn("⚠️ WARNING:", ...args);
+  },
+
+  error: (...args) => {
+    console.error("❌ ERROR:", ...args);
+  },
+};

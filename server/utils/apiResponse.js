@@ -1,25 +1,25 @@
-export const sendSuccess = (
+export const successResponse = (
   res,
   message = "Success",
   data = null,
-  meta = null,
   statusCode = 200
 ) => {
   return res.status(statusCode).json({
     success: true,
     message,
     data,
-    ...(meta && { meta }),
   });
 };
 
-export const sendError = (
+export const errorResponse = (
   res,
   message = "Something went wrong",
-  statusCode = 500
+  statusCode = 500,
+  errors = null
 ) => {
   return res.status(statusCode).json({
     success: false,
     message,
+    errors,
   });
 };
