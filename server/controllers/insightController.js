@@ -2,18 +2,75 @@ import {
   getFullPanelData,
   calculateTotalEnergy,
   calculateAvgWeather,
-} from "../services/dataAggregationService.js";
-
+} from "../services/shared/dataAggregationService.js";
 import {
   getTiltFactor,
   getOrientationFactor,
-} from "../services/solarService.js";
+} from "../services/solar/solarService.js";
+import { generateRecommendations } from "../services/insights/recommendationService.js";
 
-import { generateRecommendations } from "../services/recommendationService.js";
+export const getAlerts = async (req, res) => {
+  return handleInsightRequest(req, res, "alerts");
+};
 
-// 🧠 CENTRALIZED FUNCTION
-const getPanelInsightData = async (panelId, userId, startDate, endDate) => {
-  const { panel, location, forecasts, weather } = await getFullPanelData(panelId, startDate, endDate);
+export const getRecommendations = async (req, res) => {
+  return handleInsightRequest(req, res, "recommendations");
+};
+
+const handleInsightRequest = async (req, res, insightType) => {
+  try {
+    const requestData = getInsightRequestData(req);
+
+    if (
+      !requestData.panelId ||
+      Number.isNaN(Number(requestData.panelId))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid panelId",
+      });
+    }
+
+    const data = await getPanelInsightData(requestData);
+    const insights = generateRecommendations({
+      weather: data.avgWeather,
+      factors: data.factors,
+      totalEnergy: data.totalEnergy,
+    });
+
+    return res.json(buildInsightResponse(insightType, insights));
+  } catch (error) {
+    console.log(`Insight error for ${insightType}:`, error.message);
+    return res.status(500).json({
+      success: false,
+      message: `${capitalizeInsightType(
+        insightType
+      )} not available for this data, Error: ${error.message}`,
+    });
+  }
+};
+
+const getInsightRequestData = (req) => {
+  return {
+    userId: req.user.user_id,
+    panelId: req.params.panelId,
+    startDate: req.query.startDate,
+    endDate: req.query.endDate,
+  };
+};
+
+const getPanelInsightData = async ({
+  panelId,
+  userId,
+  startDate,
+  endDate,
+}) => {
+  const { panel, location, forecasts, weather } =
+    await getFullPanelData(panelId, startDate, endDate);
+
+  if (!panel || !location) {
+    throw new Error("Panel not found");
+  }
 
   if (panel.user_id !== userId) {
     throw new Error("Unauthorized panel access");
@@ -22,83 +79,23 @@ const getPanelInsightData = async (panelId, userId, startDate, endDate) => {
   const totalEnergy = calculateTotalEnergy(forecasts);
   const avgWeather = calculateAvgWeather(weather);
 
-  const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
-  const orientationFactor = getOrientationFactor(panel.orientation);
-
   return {
     totalEnergy,
     avgWeather,
     factors: {
-      tiltFactor,
-      orientationFactor,
+      tiltFactor: getTiltFactor(panel.tilt, location.latitude),
+      orientationFactor: getOrientationFactor(panel.orientation),
     },
   };
 };
 
-export const getAlerts = async (req, res) => {
-  try {
-    const userId = req.user.user_id;
-    const { panelId } = req.params;
-    const { startDate, endDate } = req.query;
-
-    if (!panelId || isNaN(panelId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid panelId",
-      });
-    }
-
-    const data = await getPanelInsightData(panelId, userId, startDate, endDate);
-
-    const insights = generateRecommendations({
-      weather: data.avgWeather,
-      factors: data.factors,
-      totalEnergy: data.totalEnergy,
-    });
-
-    res.json({
-      success: true,
-      alerts: insights.alerts,
-    });
-  } catch (err) {
-    console.log("❌ Alerts not available for this data, Error")
-    res.status(500).json({
-      success: false,
-      message: `Alerts not available for this data, Error: ${err.message}`,
-    });
-  }
+const buildInsightResponse = (insightType, insights) => {
+  return {
+    success: true,
+    [insightType]: insights[insightType],
+  };
 };
 
-export const getRecommendations = async (req, res) => {
-  try {
-    const userId = req.user.user_id;
-    const { panelId } = req.params;
-    const { startDate, endDate } = req.query;
-
-    if (!panelId || isNaN(panelId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid panelId",
-      });
-    }
-    
-    const data = await getPanelInsightData(panelId, userId, startDate, endDate);
-
-    const insights = generateRecommendations({
-      weather: data.avgWeather,
-      factors: data.factors,
-      totalEnergy: data.totalEnergy,
-    });
-
-    res.json({
-      success: true,
-      recommendations: insights.recommendations,
-    });
-  } catch (err) {
-    console.log("❌ Recommendation not available for this data, Error")
-    res.status(500).json({
-      success: false,
-      message: `Recommendation not available for this data, Error: ${err.message}`,
-    });
-  }
+const capitalizeInsightType = (insightType) => {
+  return insightType.charAt(0).toUpperCase() + insightType.slice(1);
 };

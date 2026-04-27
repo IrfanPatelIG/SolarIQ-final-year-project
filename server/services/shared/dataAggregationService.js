@@ -1,15 +1,21 @@
-import Panel from "../models/panelModel.js";
-import Location from "../models/locationModel.js";
-import Forecast from "../models/forecastModel.js";
-import Weather from "../models/weatherModel.js";
+import Panel from "../../models/panelModel.js";
+import Location from "../../models/LocationModel.js";
+import Forecast from "../../models/forecastModel.js";
+import Weather from "../../models/weatherModel.js";
 import { Op } from "sequelize";
+import { getInclusiveDateRange } from "../../helpers/dateHelper.js";
 
 // Fetch full dataset for a panel
 export const getFullPanelData = async (panelId, startDate, endDate) => {
   const panel = await Panel.findByPk(panelId);
 
   if (!panel) {
-    return "Panel not found";
+    return {
+      panel: null,
+      location: null,
+      forecasts: [],
+      weather: [],
+    };
   }
 
   const location = await Location.findByPk(panel.location_id);
@@ -24,9 +30,7 @@ export const getFullPanelData = async (panelId, startDate, endDate) => {
     order: [["forecast_date", "ASC"]],
   });
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
+  const { start, end } = getInclusiveDateRange(startDate, endDate);
 
   const weather = await Weather.findAll({
     where: {
@@ -37,10 +41,6 @@ export const getFullPanelData = async (panelId, startDate, endDate) => {
     },
     order: [["recorded_at", "ASC"]],
   });
-
-  if (!weather.length) {
-    return ("No weather data available for this date range");
-  }
 
   return { panel, location, forecasts, weather };
 };

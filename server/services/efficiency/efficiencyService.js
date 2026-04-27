@@ -1,12 +1,12 @@
 import {
   getFullPanelData,
   calculateTotalEnergy,
-} from "./dataAggregationService.js";
-
+} from "../shared/dataAggregationService.js";
 import {
   getTiltFactor,
   getOrientationFactor,
-} from "./solarService.js";
+} from "../solar/solarService.js";
+import { formatDateKey } from "../../helpers/dateHelper.js";
 
 // ---------- Helpers ----------
 const clamp = (num, min = 0, max = 100) =>
@@ -21,11 +21,6 @@ const getPerformance = (score) => {
   return "Poor";
 };
 
-// Build YYYY-MM-DD key
-const getDateKey = (value) => {
-  return new Date(value).toLocaleDateString("en-CA");
-};
-
 // ---------- Main ----------
 export const calculateEfficiency = async ({
   panelId,
@@ -34,6 +29,10 @@ export const calculateEfficiency = async ({
 }) => {
   const { panel, location, forecasts, weather } =
     await getFullPanelData(panelId, startDate, endDate);
+
+  if (!panel || !location) {
+    throw new Error("Panel data not found");
+  }
 
   if (!forecasts.length) {
     throw new Error("No forecast data for this range");
@@ -56,7 +55,7 @@ export const calculateEfficiency = async ({
   const weatherMap = {};
 
   weather.forEach((row) => {
-    const key = getDateKey(row.recorded_at);
+    const key = formatDateKey(row.recorded_at);
     weatherMap[key] = row;
   });
 
@@ -64,7 +63,7 @@ export const calculateEfficiency = async ({
   const daily = [];
 
   for (const day of forecasts) {
-    const dateKey = getDateKey(day.forecast_date);
+    const dateKey = formatDateKey(day.forecast_date);
     const w = weatherMap[dateKey];
 
     // If no weather row, skip that day

@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -9,16 +10,14 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // 🔸 1. Validation
-    if (!name || !email || !password) {
+    if (!hasRequiredFields(name, email, password)) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
     }
 
-    // 🔸 2. Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
       return res.status(409).json({
@@ -27,26 +26,18 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // 🔸 3. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // 🔸 4. Create user
     const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
     });
 
-    // 🔸 5. Response
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
       data: {
-        user: {
-          user_id: newUser.user_id,
-          name: newUser.name,
-          email: newUser.email,
-        },
+        user: buildPublicUser(newUser),
       },
     });
   } catch (error) {
@@ -58,22 +49,18 @@ export const registerUser = async (req, res) => {
   }
 };
 
-
-
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Validation
-    if (!email || !password) {
+    if (!hasRequiredFields(email, password)) {
       return res.status(400).json({
         success: false,
         message: "Email and password required",
       });
     }
 
-    // 2. Find user
-    const user = await User.findOne({ where: { email } });
+    const user = await findUserByEmail(email);
 
     if (!user) {
       return res.status(401).json({
@@ -82,7 +69,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 3. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -92,30 +78,17 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 4. Generate Tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    // 5. Save refresh token in DB
     user.refresh_token = refreshToken;
     await user.save();
 
-    // 6. Response
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      data: {
-        user: {
-          user_id: user.user_id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-        accessToken,
-        refreshToken,
-      },
+      data: buildLoginResponse(user, accessToken, refreshToken),
     });
-
   } catch (error) {
     console.error("Login Error:", error);
     return res.status(500).json({
@@ -125,13 +98,10 @@ export const loginUser = async (req, res) => {
   }
 };
 
-
-
 export const refreshTokenHandler = async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
-    // 1. Check token exists
     if (!refreshToken) {
       return res.status(400).json({
         success: false,
@@ -139,21 +109,16 @@ export const refreshTokenHandler = async (req, res) => {
       });
     }
 
-    // 2. Verify refresh token
     let decoded;
     try {
-      decoded = jwt.verify(
-        refreshToken,
-        process.env.JWT_REFRESH_SECRET
-      );
-    } catch (err) {
+      decoded = verifyRefreshToken(refreshToken);
+    } catch (error) {
       return res.status(401).json({
         success: false,
         message: "Invalid refresh token",
       });
     }
 
-    // 3. Find user
     const user = await User.findOne({
       where: { user_id: decoded.user_id },
     });
@@ -165,16 +130,13 @@ export const refreshTokenHandler = async (req, res) => {
       });
     }
 
-    // 4. Generate new access token
     const newAccessToken = generateAccessToken(user);
 
-    // 5. Send response
     return res.status(200).json({
       success: true,
       message: "Access token refreshed",
       accessToken: newAccessToken,
     });
-
   } catch (error) {
     console.error("Refresh Error:", error);
     return res.status(500).json({
@@ -184,12 +146,10 @@ export const refreshTokenHandler = async (req, res) => {
   }
 };
 
-
 export const logoutUser = async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
-    // 1. Check token
     if (!refreshToken) {
       return res.status(400).json({
         success: false,
@@ -197,7 +157,6 @@ export const logoutUser = async (req, res) => {
       });
     }
 
-    // 2. Find user with this token
     const user = await User.findOne({
       where: { refresh_token: refreshToken },
     });
@@ -209,16 +168,13 @@ export const logoutUser = async (req, res) => {
       });
     }
 
-    // 3. Remove refresh token
     user.refresh_token = null;
     await user.save();
 
-    // 4. Response
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",
     });
-
   } catch (error) {
     console.error("Logout Error:", error);
     return res.status(500).json({
@@ -228,20 +184,9 @@ export const logoutUser = async (req, res) => {
   }
 };
 
-
 export const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findOne({
-      where: { user_id: req.user.user_id },
-      attributes: [
-        "user_id",
-        "name",
-        "email",
-        "role",
-        "created_at",
-        "updated_at",
-      ],
-    });
+    const user = await findCurrentUserById(req.user.user_id);
 
     if (!user) {
       return res.status(404).json({
@@ -262,4 +207,56 @@ export const getCurrentUser = async (req, res) => {
       message: "Server error",
     });
   }
+};
+
+const hasRequiredFields = (...fields) => {
+  return fields.every(Boolean);
+};
+
+const findUserByEmail = async (email) => {
+  return User.findOne({ where: { email } });
+};
+
+const findCurrentUserById = async (userId) => {
+  return User.findOne({
+    where: { user_id: userId },
+    attributes: [
+      "user_id",
+      "name",
+      "email",
+      "role",
+      "created_at",
+      "updated_at",
+    ],
+  });
+};
+
+const buildPublicUser = (user) => {
+  return {
+    user_id: user.user_id,
+    name: user.name,
+    email: user.email,
+  };
+};
+
+const buildLoginResponse = (
+  user,
+  accessToken,
+  refreshToken
+) => {
+  return {
+    user: {
+      ...buildPublicUser(user),
+      role: user.role,
+    },
+    accessToken,
+    refreshToken,
+  };
+};
+
+const verifyRefreshToken = (refreshToken) => {
+  return jwt.verify(
+    refreshToken,
+    process.env.JWT_REFRESH_SECRET
+  );
 };

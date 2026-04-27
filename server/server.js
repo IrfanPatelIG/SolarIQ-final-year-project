@@ -12,6 +12,9 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import insightRoutes from "./routes/insightRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 
+import { notFound } from "./middleware/notFoundMiddleware.js";
+import { errorHandler } from "./middleware/errorMiddleware.js";
+
 dotenv.config();
 
 const app = express();
@@ -43,6 +46,9 @@ app.use("/api/dashboard", dashboardRoutes);
 app.get("/", (req, res) => {
   res.send("SolarIQ Backend Running 🚀");
 });
+
+app.use(notFound);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🖥️ Server running on http://localhost:${PORT}`);

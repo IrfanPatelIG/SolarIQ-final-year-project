@@ -1,7 +1,7 @@
 import sequelize from "../config/db.js";
 
 import User from "./userModel.js";
-import Location from "./locationModel.js";
+import Location from "./LocationModel.js";
 import Panel from "./panelModel.js";
 import Forecast from "./forecastModel.js";
 import Weather from "./weatherModel.js";

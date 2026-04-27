@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/db.js";
-import Location from "./locationModel.js";
 
 const Panel = sequelize.define(
   "Panel",

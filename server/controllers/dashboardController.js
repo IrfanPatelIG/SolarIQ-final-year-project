@@ -2,210 +2,235 @@ import {
   getFullPanelData,
   calculateTotalEnergy,
   calculateAvgWeather,
-} from "../services/dataAggregationService.js";
+} from "../services/shared/dataAggregationService.js";
 import { getSelectedDayEnergy } from "../helpers/dashboardHelper.js";
-import { calculateEfficiency } from "../services/efficiencyService.js";
-import { generateRecommendations } from "../services/recommendationService.js";
+import {
+  buildForecast,
+  buildWeatherImpact,
+  buildDistribution,
+  buildPanelPerformance,
+} from "../helpers/dashboardAnalyticsHelper.js";
+import { calculateEfficiency } from "../services/efficiency/efficiencyService.js";
+import { generateRecommendations } from "../services/insights/recommendationService.js";
 import {
   getTiltFactor,
   getOrientationFactor,
-} from "../services/solarService.js";
+} from "../services/solar/solarService.js";
 import Panel from "../models/panelModel.js";
+import { isValidDateRange } from "../helpers/dateHelper.js";
 
-// 🔥 MAIN DASHBOARD CONTROLLER
 export const getDashboardData = async (req, res) => {
   try {
-    const { panelId } = req.params;
-    const { startDate, endDate } = req.query;
-    
-    console.log("Requested panelId:", panelId);
+    const requestData = getDashboardRequestData(req);
+    const validation = validateDashboardRequest(requestData);
 
-    if (isNaN(panelId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid panelId",
-      });
+    if (validation) {
+      return res.status(validation.status).json(validation.body);
     }
 
-    if (new Date(startDate) > new Date(endDate)) {
-      return res.status(400).json({
-        success: false,
-        message: "startDate cannot be after endDate",
-      });
-    }
-
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: "User not authenticated",
-      });
-    }
-    const userId = req.user.user_id;
-
-    if (!panelId || !startDate || !endDate) {
-      return res.status(400).json({
-        success: false,
-        message: "panelId, startDate and endDate required",
-      });
-    }
-
-    // 🔥 CENTRALIZED DATA FETCH
     const { panel, location, forecasts, weather } = await getFullPanelData(
-      panelId,
-      startDate,
-      endDate,
+      requestData.panelId,
+      requestData.startDate,
+      requestData.endDate
     );
 
-    if (!panel) {
+    if (!panel || !location) {
       return res.status(404).json({
         success: false,
         message: "Panel not found",
       });
     }
 
-    // 🔐 USER VALIDATION
-    if (panel.user_id !== userId) {
+    if (panel.user_id !== requestData.userId) {
       return res.status(403).json({
+        success: false,
         message: "Unauthorized: Panel does not belong to this user",
       });
     }
 
     const totalEnergy = calculateTotalEnergy(forecasts);
-
-    let avgWeather;
-    let weatherAvailable = true;
-
-    try {
-      avgWeather = calculateAvgWeather(weather);
-    } catch {
-      weatherAvailable = false;
-    }
-
-    // 1️⃣ FORECAST
-    const forecast = forecasts.map((f) => ({
-      date: f.forecast_date,
-      energy: Number(f.predicted_energy_kwh.toFixed(2)),
-    }));
-
+    const weatherSummary = buildWeatherSummary(weather);
+    const forecast = buildForecast(forecasts);
     const selectedDayEnergy = getSelectedDayEnergy(
       forecasts,
-      startDate
+      requestData.startDate
+    );
+    const panelPerformance = await getUserPanelPerformance(
+      requestData.userId,
+      requestData.startDate,
+      requestData.endDate
+    );
+    const efficiencyData = await calculateEfficiency({
+      panelId: requestData.panelId,
+      startDate: requestData.startDate,
+      endDate: requestData.endDate,
+    });
+    const insights = buildDashboardInsights(
+      panel,
+      location,
+      weatherSummary.avgWeather,
+      totalEnergy
     );
 
-    // 2️⃣ DAILY ENERGY
-    const dailyEnergy = forecast;
-
-    // 3️⃣ WEATHER IMPACT (FIXED MAPPING)
-    const weatherMap = {};
-
-    weather.forEach((w) => {
-      const date = new Date(w.recorded_at).toLocaleDateString("en-CA");
-      weatherMap[date] = w;
-    });
-
-    const weatherImpact = forecasts.map((f) => {
-      const date = new Date(f.forecast_date).toLocaleDateString("en-CA");
-      const w = weatherMap[date];
-
-      return {
-        date: f.forecast_date,
-        energy: f.predicted_energy_kwh,
-        temperature: w?.temperature || 0,
-        cloud_cover: w?.cloud_cover || 0,
-      };
-    });
-
-    // 4️⃣ DISTRIBUTION
-    const distributionMap = {};
-
-    forecasts.forEach((f) => {
-      const day = new Date(f.forecast_date).toLocaleString("en-US", {
-        weekday: "long",
-      });
-
-      if (!distributionMap[day]) {
-        distributionMap[day] = [];
-      }
-
-      distributionMap[day].push(f.predicted_energy_kwh);
-    });
-
-    const distribution = Object.keys(distributionMap).map((day) => ({
-      day,
-      avg_energy:
-        distributionMap[day].reduce((a, b) => a + b, 0) /
-        distributionMap[day].length,
-    }));
-
-    // 5️⃣ PANEL PERFORMANCE
-    const panels = await Panel.findAll({
-      where: { user_id: userId },
-    });
-
-    const panelPerformance = [];
-
-    for (const p of panels) {
-      const { forecasts: pf } = await getFullPanelData(
-        p.panel_id,
-        startDate,
-        endDate
-      );
-
-      const energy =
-        pf.reduce((sum, f) => sum + f.predicted_energy_kwh, 0) /
-        (pf.length || 1);
-
-      panelPerformance.push({
-        panel_id: p.panel_id,
-        tilt: p.tilt,
-        orientation: p.orientation,
-        avg_energy: energy,
-      });
-    }
-
-    // 6️⃣ EFFICIENCY
-    const efficiencyData = await calculateEfficiency({
-      panelId,
-      startDate,
-      endDate,
-    });
-
-    // 7️⃣ INSIGHTS
-    const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
-    const orientationFactor = getOrientationFactor(panel.orientation);
-
-    const insights = generateRecommendations({
-      weather: avgWeather,
-      factors: { tiltFactor, orientationFactor },
-      totalEnergy,
-    });
-
-    console.log("Panel from DB:", panel.panel_id);
-
-    res.json({
-      success: true,
-      data: {
+    return res.status(200).json(
+      buildDashboardResponse({
         heroCard: selectedDayEnergy,
         forecast,
-        analytics: {
-          dailyEnergy,
-          weatherImpact,
-          distribution,
-          panelPerformance,
-        },
+        dailyEnergy: forecast,
+        weatherImpact: buildWeatherImpact(forecasts, weather),
+        distribution: buildDistribution(forecasts),
+        panelPerformance,
         efficiency: efficiencyData.efficiency,
         insights,
-      },
-      meta: {
-        weatherAvailable,
-      },
-    });
-  } catch (err) {
-    console.error("❌ Dashboard Error:", err);
-
-    res.status(500).json({
+        weatherAvailable: weatherSummary.weatherAvailable,
+      })
+    );
+  } catch (error) {
+    console.error("Dashboard Error:", error);
+    return res.status(500).json({
       success: false,
       message: "Dashboard fetch failed",
     });
   }
+};
+
+const getDashboardRequestData = (req) => {
+  return {
+    panelId: req.params.panelId,
+    startDate: req.query.startDate,
+    endDate: req.query.endDate,
+    userId: req.user?.user_id,
+  };
+};
+
+const validateDashboardRequest = ({
+  panelId,
+  startDate,
+  endDate,
+  userId,
+}) => {
+  if (!panelId || Number.isNaN(Number(panelId))) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "Invalid panelId",
+      },
+    };
+  }
+
+  if (!startDate || !endDate) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "panelId, startDate and endDate required",
+      },
+    };
+  }
+
+  if (!isValidDateRange(startDate, endDate)) {
+    return {
+      status: 400,
+      body: {
+        success: false,
+        message: "startDate cannot be after endDate",
+      },
+    };
+  }
+
+  if (!userId) {
+    return {
+      status: 401,
+      body: {
+        success: false,
+        message: "User not authenticated",
+      },
+    };
+  }
+
+  return null;
+};
+
+const buildWeatherSummary = (weather) => {
+  try {
+    return {
+      avgWeather: calculateAvgWeather(weather),
+      weatherAvailable: true,
+    };
+  } catch {
+    return {
+      avgWeather: {
+        temperature: 0,
+        cloud_cover: 0,
+        humidity: 0,
+        precipitation: 0,
+        wind_speed: 0,
+        air_pressure: 0,
+      },
+      weatherAvailable: false,
+    };
+  }
+};
+
+const getUserPanelPerformance = async (
+  userId,
+  startDate,
+  endDate
+) => {
+  const panels = await Panel.findAll({
+    where: { user_id: userId },
+  });
+
+  return buildPanelPerformance(panels, startDate, endDate);
+};
+
+const buildDashboardInsights = (
+  panel,
+  location,
+  avgWeather,
+  totalEnergy
+) => {
+  const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
+  const orientationFactor = getOrientationFactor(panel.orientation);
+
+  return generateRecommendations({
+    weather: avgWeather,
+    factors: {
+      tiltFactor,
+      orientationFactor,
+    },
+    totalEnergy,
+  });
+};
+
+const buildDashboardResponse = ({
+  heroCard,
+  forecast,
+  dailyEnergy,
+  weatherImpact,
+  distribution,
+  panelPerformance,
+  efficiency,
+  insights,
+  weatherAvailable,
+}) => {
+  return {
+    success: true,
+    data: {
+      heroCard,
+      forecast,
+      analytics: {
+        dailyEnergy,
+        weatherImpact,
+        distribution,
+        panelPerformance,
+      },
+      efficiency,
+      insights,
+    },
+    meta: {
+      weatherAvailable,
+    },
+  };
 };
