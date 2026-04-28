@@ -1,203 +1,101 @@
-import { Forecast, Panel } from "../models/index.js";
-import { Op, fn, col } from "sequelize";
-import sequelize from "../config/db.js";
-import { calculateEfficiency } from "../services/efficiency/efficiencyService.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import { successResponse, errorResponse } from "../utils/apiResponse.js";
 
-export const getDailyEnergy = async (req, res) => {
-  return handleAnalyticsRequest(
-    res,
-    () => fetchDailyEnergy(getAnalyticsParams(req)),
-    "Error fetching daily energy"
-  );
-};
+import { isValidDateRange } from "../helpers/dateHelper.js";
 
-export const getWeatherImpact = async (req, res) => {
-  return handleAnalyticsRequest(
-    res,
-    () => fetchWeatherImpactData(getAnalyticsParams(req)),
-    "Error fetching weather impact"
-  );
-};
+import {
+  getDailyEnergyService,
+  getWeatherImpactService,
+  getEnergyDistributionService,
+  getPanelPerformanceService,
+  getPanelEfficiencyService,
+} from "../services/analytics/analyticsService.js";
 
-export const getEnergyDistribution = async (req, res) => {
-  return handleAnalyticsRequest(
-    res,
-    () => fetchEnergyDistribution(getAnalyticsParams(req)),
-    "Error fetching distribution"
-  );
-};
+// ===================================================
+// Helpers
+// ===================================================
 
-export const getPanelPerformance = async (req, res) => {
-  return handleAnalyticsRequest(
-    res,
-    () => fetchPanelPerformanceData(getAnalyticsParams(req)),
-    "Error fetching panel performance"
-  );
-};
+const getRequestParams = (req) => ({
+  userId: req.user?.user_id,
+  startDate: req.query.startDate,
+  endDate: req.query.endDate,
+});
 
-export const getPanelEfficiency = async (req, res) => {
-  return handleAnalyticsRequest(
-    res,
-    async () => {
-      const { userId, startDate, endDate } = getAnalyticsParams(req);
-      const panel = await findUserPanel(userId);
-
-      if (!panel) {
-        return {
-          status: 404,
-          body: { message: "No panel found" },
-        };
-      }
-
-      const result = await calculateEfficiency({
-        panelId: panel.panel_id,
-        startDate,
-        endDate,
-      });
-
-      return {
-        success: true,
-        ...result,
-      };
-    },
-    "Efficiency error"
-  );
-};
-
-const handleAnalyticsRequest = async (
-  res,
-  action,
-  errorMessage
-) => {
-  try {
-    const payload = await action();
-
-    if (payload?.status) {
-      return res.status(payload.status).json(payload.body);
-    }
-
-    return res.json(payload);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: errorMessage });
+const validateRequest = ({ userId, startDate, endDate }) => {
+  if (!userId) {
+    return "User not authenticated";
   }
+
+  if (!startDate || !endDate) {
+    return "startDate and endDate required";
+  }
+
+  if (!isValidDateRange(startDate, endDate)) {
+    return "Invalid date range";
+  }
+
+  return null;
 };
 
-const getAnalyticsParams = (req) => {
-  return {
-    userId: req.user.user_id,
-    startDate: req.query.startDate,
-    endDate: req.query.endDate,
-  };
+const handleAnalyticsResponse = async (req, res, service, message) => {
+  const params = getRequestParams(req);
+
+  const error = validateRequest(params);
+
+  if (error) {
+    return errorResponse(res, error, 400);
+  }
+
+  const data = await service(params);
+
+  return successResponse(res, message, data);
 };
 
-const buildForecastDateFilter = (startDate, endDate) => {
-  return {
-    forecast_date: {
-      [Op.between]: [startDate, endDate],
-    },
-  };
-};
+// ===================================================
+// Controllers
+// ===================================================
 
-const fetchDailyEnergy = async ({
-  userId,
-  startDate,
-  endDate,
-}) => {
-  return Forecast.findAll({
-    attributes: ["forecast_date", "predicted_energy_kwh"],
-    where: buildForecastDateFilter(startDate, endDate),
-    include: [
-      {
-        model: Panel,
-        attributes: [],
-        where: { user_id: userId },
-      },
-    ],
-    order: [["forecast_date", "ASC"]],
-  });
-};
-
-const fetchWeatherImpactData = async ({
-  userId,
-  startDate,
-  endDate,
-}) => {
-  const [rows] = await sequelize.query(
-    `
-      SELECT
-        f.panel_id,
-        f.forecast_date,
-        f.predicted_energy_kwh,
-        w.cloud_cover,
-        w.temperature
-      FROM forecasted_values f
-      JOIN weather_data w
-        ON f.location_id = w.location_id
-       AND DATE(w.recorded_at) = f.forecast_date
-      JOIN panel_configs p
-        ON f.panel_id = p.panel_id
-      WHERE f.forecast_date BETWEEN :startDate AND :endDate
-        AND p.user_id = :userId
-      ORDER BY f.forecast_date ASC
-    `,
-    {
-      replacements: { startDate, endDate, userId },
-    }
+export const getDailyEnergy = asyncHandler(async (req, res) => {
+  return handleAnalyticsResponse(
+    req,
+    res,
+    getDailyEnergyService,
+    "Daily energy fetched successfully",
   );
+});
 
-  return rows;
-};
+export const getWeatherImpact = asyncHandler(async (req, res) => {
+  return handleAnalyticsResponse(
+    req,
+    res,
+    getWeatherImpactService,
+    "Weather impact fetched successfully",
+  );
+});
 
-const fetchEnergyDistribution = async ({
-  userId,
-  startDate,
-  endDate,
-}) => {
-  return Forecast.findAll({
-    attributes: [
-      [fn("DAYNAME", col("forecast_date")), "day"],
-      [fn("AVG", col("predicted_energy_kwh")), "avg_energy"],
-    ],
-    where: buildForecastDateFilter(startDate, endDate),
-    include: [
-      {
-        model: Panel,
-        attributes: [],
-        where: { user_id: userId },
-      },
-    ],
-    group: [fn("DAYNAME", col("forecast_date"))],
-  });
-};
+export const getEnergyDistribution = asyncHandler(async (req, res) => {
+  return handleAnalyticsResponse(
+    req,
+    res,
+    getEnergyDistributionService,
+    "Distribution fetched successfully",
+  );
+});
 
-const fetchPanelPerformanceData = async ({
-  userId,
-  startDate,
-  endDate,
-}) => {
-  return Panel.findAll({
-    where: { user_id: userId },
-    attributes: [
-      "panel_id",
-      "tilt",
-      "orientation",
-      [fn("AVG", col("Forecasts.predicted_energy_kwh")), "avg_energy"],
-    ],
-    include: [
-      {
-        model: Forecast,
-        attributes: [],
-        where: buildForecastDateFilter(startDate, endDate),
-      },
-    ],
-    group: ["Panel.panel_id", "tilt", "orientation"],
-    raw: true,
-  });
-};
+export const getPanelPerformance = asyncHandler(async (req, res) => {
+  return handleAnalyticsResponse(
+    req,
+    res,
+    getPanelPerformanceService,
+    "Panel performance fetched successfully",
+  );
+});
 
-const findUserPanel = async (userId) => {
-  return Panel.findOne({
-    where: { user_id: userId },
-  });
-};
+export const getPanelEfficiency = asyncHandler(async (req, res) => {
+  return handleAnalyticsResponse(
+    req,
+    res,
+    getPanelEfficiencyService,
+    "Efficiency fetched successfully",
+  );
+});
