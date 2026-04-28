@@ -1,9 +1,11 @@
 import { formatDateKey } from "./dateHelper.js";
 
+// ===================================================
+// Hero Card
+// ===================================================
+
 export const getTargetDate = (startDate) => {
-  return startDate
-    ? formatDateKey(startDate)
-    : formatDateKey(new Date());
+  return startDate ? formatDateKey(startDate) : formatDateKey(new Date());
 };
 
 export const getSelectedDayEnergy = (forecasts, startDate) => {
@@ -17,9 +19,8 @@ export const getSelectedDayEnergy = (forecasts, startDate) => {
 
   const targetDate = getTargetDate(startDate);
 
-  // Exact Match
   const exact = forecasts.find(
-    (item) => formatDateKey(item.forecast_date) === targetDate
+    (item) => formatDateKey(item.forecast_date) === targetDate,
   );
 
   if (exact) {
@@ -30,9 +31,8 @@ export const getSelectedDayEnergy = (forecasts, startDate) => {
     };
   }
 
-  // Future nearest match
   const future = forecasts.find(
-    (item) => formatDateKey(item.forecast_date) > targetDate
+    (item) => formatDateKey(item.forecast_date) > targetDate,
   );
 
   if (future) {
@@ -43,7 +43,6 @@ export const getSelectedDayEnergy = (forecasts, startDate) => {
     };
   }
 
-  // Last available
   const last = forecasts[forecasts.length - 1];
 
   return {
@@ -51,4 +50,65 @@ export const getSelectedDayEnergy = (forecasts, startDate) => {
     energy: Number(last.predicted_energy_kwh.toFixed(2)),
     source: "last-available",
   };
+};
+
+// ===================================================
+// Forecast
+// ===================================================
+
+export const buildForecast = (forecasts) => {
+  return forecasts.map((item) => ({
+    date: item.forecast_date,
+    energy: Number(item.predicted_energy_kwh.toFixed(2)),
+  }));
+};
+
+// ===================================================
+// Weather Impact
+// ===================================================
+
+export const buildWeatherImpact = (forecasts, weather) => {
+  const weatherMap = {};
+
+  weather.forEach((row) => {
+    weatherMap[formatDateKey(row.recorded_at)] = row;
+  });
+
+  return forecasts.map((item) => {
+    const date = formatDateKey(item.forecast_date);
+
+    const w = weatherMap[date];
+
+    return {
+      date: item.forecast_date,
+      energy: item.predicted_energy_kwh,
+      temperature: w?.temperature || 0,
+      cloud_cover: w?.cloud_cover || 0,
+    };
+  });
+};
+
+// ===================================================
+// Distribution
+// ===================================================
+
+export const buildDistribution = (forecasts) => {
+  const map = {};
+
+  forecasts.forEach((item) => {
+    const day = new Date(item.forecast_date).toLocaleString("en-US", {
+      weekday: "long",
+    });
+
+    if (!map[day]) {
+      map[day] = [];
+    }
+
+    map[day].push(item.predicted_energy_kwh);
+  });
+
+  return Object.keys(map).map((day) => ({
+    day,
+    avg_energy: map[day].reduce((a, b) => a + b, 0) / map[day].length,
+  }));
 };
