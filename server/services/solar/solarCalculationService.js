@@ -3,6 +3,30 @@ import {
   getSeasonalFactor,
 } from "./solarService.js";
 
+// ----------------------------
+// Helpers
+// ----------------------------
+const normalizeDate = (value) => {
+  const d = new Date(value);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const getToday = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const addDays = (date, days) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
+// ----------------------------
+// Main Builder
+// ----------------------------
 export const buildSolarForecastRows = async ({
   dailyWeather,
   startDate,
@@ -16,11 +40,29 @@ export const buildSolarForecastRows = async ({
   const weatherRows = [];
   let totalEnergy = 0;
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const today = getToday();
+  const maxEnd = addDays(today, 5);
+
+  let start = normalizeDate(startDate);
+  let end = normalizeDate(endDate);
+
+  // ------------------------------------
+  // Auto-fix invalid dates
+  // ------------------------------------
+
+  // if start in past -> today
+  if (start < today) start = today;
+
+  // if end before start
+  if (end < start) end = addDays(start, 5);
+
+  // max 5 day range only
+  if (end > maxEnd) end = maxEnd;
+
+  end.setHours(23, 59, 59, 999);
 
   for (const day of dailyWeather) {
-    const currentDate = new Date(day.date);
+    const currentDate = normalizeDate(day.date);
 
     if (currentDate < start || currentDate > end) {
       continue;
@@ -45,19 +87,19 @@ export const buildSolarForecastRows = async ({
 
     weatherRows.push({
       location_id: locationId,
-      temperature: day.temperature,
-      humidity: day.humidity,
-      solar_irradiance,
-      cloud_cover: day.cloud_cover,
-      wind_speed: day.wind_speed,
-      precipitation: day.precipitation,
-      air_pressure: day.air_pressure,
+      temperature: Number(day.temperature.toFixed(2)),
+      humidity: Number(day.humidity.toFixed(2)),
+      solar_irradiance: Number(solar_irradiance.toFixed(2)),
+      cloud_cover: Number(day.cloud_cover.toFixed(2)),
+      wind_speed: Number(day.wind_speed.toFixed(2)),
+      precipitation: Number(day.precipitation.toFixed(2)),
+      air_pressure: Number(day.air_pressure.toFixed(2)),
       recorded_at: currentDate,
     });
 
     forecasts.push({
       forecast_date: currentDate,
-      predicted_energy_kwh: dailyEnergy,
+      predicted_energy_kwh: Number(dailyEnergy.toFixed(2)),
       location_id: locationId,
       panel_id: panelId,
       model_version: "v3",
@@ -67,10 +109,13 @@ export const buildSolarForecastRows = async ({
   return {
     forecasts,
     weatherRows,
-    totalEnergy,
+    totalEnergy: Number(totalEnergy.toFixed(2)),
   };
 };
 
+// ----------------------------
+// Summary Factors
+// ----------------------------
 export const buildFactorSummary = async ({
   location,
   panel,
@@ -84,8 +129,7 @@ export const buildFactorSummary = async ({
   });
 
   return {
-    tiltFactor:
-      result.factors.tiltFactor,
+    tiltFactor: result.factors.tiltFactor,
     orientationFactor:
       result.factors.orientationFactor,
   };
