@@ -1,7 +1,8 @@
 import asyncHandler from "../utils/asyncHandler.js";
+
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 
-import { isValidDateRange } from "../helpers/dateHelper.js";
+import { validateAnalyticsRequest } from "../validators/analyticsValidator.js";
 
 import {
   getDailyEnergyService,
@@ -11,91 +12,83 @@ import {
   getPanelEfficiencyService,
 } from "../services/analytics/analyticsService.js";
 
-// ===================================================
-// Helpers
-// ===================================================
-
-const getRequestParams = (req) => ({
+const buildRequestData = (req) => ({
   userId: req.user?.user_id,
   startDate: req.query.startDate,
   endDate: req.query.endDate,
 });
 
-const validateRequest = ({ userId, startDate, endDate }) => {
-  if (!userId) {
-    return "User not authenticated";
-  }
+// Daily Energy
+export const getDailyEnergy = asyncHandler(async (req, res) => {
+  const requestData = buildRequestData(req);
 
-  if (!startDate || !endDate) {
-    return "startDate and endDate required";
-  }
-
-  if (!isValidDateRange(startDate, endDate)) {
-    return "Invalid date range";
-  }
-
-  return null;
-};
-
-const handleAnalyticsResponse = async (req, res, service, message) => {
-  const params = getRequestParams(req);
-
-  const error = validateRequest(params);
+  const error = validateAnalyticsRequest(requestData);
 
   if (error) {
     return errorResponse(res, error, 400);
   }
 
-  const data = await service(params);
+  const data = await getDailyEnergyService(requestData);
 
-  return successResponse(res, message, data);
-};
-
-// ===================================================
-// Controllers
-// ===================================================
-
-export const getDailyEnergy = asyncHandler(async (req, res) => {
-  return handleAnalyticsResponse(
-    req,
-    res,
-    getDailyEnergyService,
-    "Daily energy fetched successfully",
-  );
+  return successResponse(res, "Daily energy fetched successfully", data);
 });
 
+// Weather Impact
 export const getWeatherImpact = asyncHandler(async (req, res) => {
-  return handleAnalyticsResponse(
-    req,
-    res,
-    getWeatherImpactService,
-    "Weather impact fetched successfully",
-  );
+  const requestData = buildRequestData(req);
+
+  const error = validateAnalyticsRequest(requestData);
+
+  if (error) {
+    return errorResponse(res, error, 400);
+  }
+
+  const data = await getWeatherImpactService(requestData);
+
+  return successResponse(res, "Weather impact fetched successfully", data);
 });
 
+// Distribution
 export const getEnergyDistribution = asyncHandler(async (req, res) => {
-  return handleAnalyticsResponse(
-    req,
-    res,
-    getEnergyDistributionService,
-    "Distribution fetched successfully",
-  );
+  const requestData = buildRequestData(req);
+
+  const error = validateAnalyticsRequest(requestData);
+
+  if (error) {
+    return errorResponse(res, error, 400);
+  }
+
+  const data = await getEnergyDistributionService(requestData);
+
+  return successResponse(res, "Distribution fetched successfully", data);
 });
 
+// Panel Performance
 export const getPanelPerformance = asyncHandler(async (req, res) => {
-  return handleAnalyticsResponse(
-    req,
-    res,
-    getPanelPerformanceService,
-    "Panel performance fetched successfully",
-  );
+  const requestData = buildRequestData(req);
+
+  const error = validateAnalyticsRequest(requestData);
+
+  if (error) {
+    return errorResponse(res, error, 400);
+  }
+
+  const data = await getPanelPerformanceService(requestData);
+
+  return successResponse(res, "Panel performance fetched successfully", data);
 });
 
+// Efficiency
 export const getPanelEfficiency = asyncHandler(async (req, res) => {
-  return handleAnalyticsResponse(
-    req,
-    res,
-    getPanelEfficiencyService,
-    "Efficiency fetched successfully",
-  );
+  const requestData = buildRequestData(req);
+
+  const error = validateAnalyticsRequest(requestData);
+
+  if (error) {
+    return errorResponse(res, error, 400);
+  }
+
+  const data = await getPanelEfficiencyService(requestData);
+
+  return successResponse(res, "Efficiency fetched successfully", data);
 });
