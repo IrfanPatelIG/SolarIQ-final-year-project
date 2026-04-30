@@ -18,9 +18,7 @@ import {
   buildDistribution,
 } from "../../helpers/dashboardHelper.js";
 
-import { getTiltFactor, getOrientationFactor } from "../solar/solarService.js";
-
-import { generateRecommendations } from "../insights/recommendationService.js";
+import { getFullInsightsService } from "../insights/insightService.js";
 
 // ===================================================
 // Main Service
@@ -54,7 +52,7 @@ export const getDashboardService = async ({
 
   const heroCard = getSelectedDayEnergy(forecasts, startDate);
 
-  const [panelPerformance, efficiencyData] = await Promise.all([
+  const [panelPerformance, efficiencyData, insightsData] = await Promise.all([
     getPanelPerformance(userId, startDate, endDate),
 
     calculateEfficiency({
@@ -62,14 +60,14 @@ export const getDashboardService = async ({
       startDate,
       endDate,
     }),
-  ]);
 
-  const insights = buildInsights({
-    panel,
-    location,
-    avgWeather,
-    totalEnergy,
-  });
+    getFullInsightsService({
+      userId,
+      panelId,
+      startDate,
+      endDate,
+    }),
+  ]);
 
   return {
     heroCard,
@@ -84,7 +82,11 @@ export const getDashboardService = async ({
 
     efficiency: efficiencyData.efficiency,
 
-    insights,
+    insights: {
+      score: insightsData.score,
+      alerts: insightsData.alerts,
+      recommendations: insightsData.recommendations,
+    },
 
     meta: {
       weatherAvailable: weather.length > 0,
@@ -157,20 +159,5 @@ const getPanelPerformance = async (userId, startDate, endDate) => {
       orientation: panel.orientation,
       avg_energy: avg,
     };
-  });
-};
-
-const buildInsights = ({ panel, location, avgWeather, totalEnergy }) => {
-  const tiltFactor = getTiltFactor(panel.tilt, location.latitude);
-
-  const orientationFactor = getOrientationFactor(panel.orientation);
-
-  return generateRecommendations({
-    weather: avgWeather,
-    factors: {
-      tiltFactor,
-      orientationFactor,
-    },
-    totalEnergy,
   });
 };

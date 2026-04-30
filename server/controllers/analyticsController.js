@@ -1,5 +1,3 @@
-import asyncHandler from "../utils/asyncHandler.js";
-
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 
 import { validateAnalyticsRequest } from "../validators/analyticsValidator.js";
@@ -19,7 +17,8 @@ const buildRequestData = (req) => ({
 });
 
 // Daily Energy
-export const getDailyEnergy = asyncHandler(async (req, res) => {
+export const getDailyEnergy = async (req, res) => {
+  try {
   const requestData = buildRequestData(req);
 
   const error = validateAnalyticsRequest(requestData);
@@ -28,13 +27,18 @@ export const getDailyEnergy = asyncHandler(async (req, res) => {
     return errorResponse(res, error, 400);
   }
 
-  const data = await getDailyEnergyService(requestData);
+    const data = await getDailyEnergyService(requestData);
 
-  return successResponse(res, "Daily energy fetched successfully", data);
-});
+    return successResponse(res, "Daily energy fetched successfully", data);
+  } catch (error) {
+    console.error("Error in getDailyEnergy:", error);
+    return errorResponse(res, error.message, 500);
+  }
+};
 
 // Weather Impact
-export const getWeatherImpact = asyncHandler(async (req, res) => {
+export const getWeatherImpact = async (req, res) => {
+  try {
   const requestData = buildRequestData(req);
 
   const error = validateAnalyticsRequest(requestData);
@@ -43,13 +47,18 @@ export const getWeatherImpact = asyncHandler(async (req, res) => {
     return errorResponse(res, error, 400);
   }
 
-  const data = await getWeatherImpactService(requestData);
+    const data = await getWeatherImpactService(requestData);
 
-  return successResponse(res, "Weather impact fetched successfully", data);
-});
+    return successResponse(res, "Weather impact fetched successfully", data);
+  } catch (error) {
+    console.error("Error in getWeatherImpact:", error);
+    return errorResponse(res, error.message, 500);
+  }
+};
 
 // Distribution
-export const getEnergyDistribution = asyncHandler(async (req, res) => {
+export const getEnergyDistribution = async (req, res) => {
+  try {
   const requestData = buildRequestData(req);
 
   const error = validateAnalyticsRequest(requestData);
@@ -58,13 +67,18 @@ export const getEnergyDistribution = asyncHandler(async (req, res) => {
     return errorResponse(res, error, 400);
   }
 
-  const data = await getEnergyDistributionService(requestData);
+    const data = await getEnergyDistributionService(requestData);
 
-  return successResponse(res, "Distribution fetched successfully", data);
-});
+    return successResponse(res, "Distribution fetched successfully", data);
+  } catch (error) {
+    console.error("Error in getEnergyDistribution:", error);
+    return errorResponse(res, error.message, 500);
+  }
+};
 
 // Panel Performance
-export const getPanelPerformance = asyncHandler(async (req, res) => {
+export const getPanelPerformance = async (req, res) => {
+  try {
   const requestData = buildRequestData(req);
 
   const error = validateAnalyticsRequest(requestData);
@@ -73,13 +87,18 @@ export const getPanelPerformance = asyncHandler(async (req, res) => {
     return errorResponse(res, error, 400);
   }
 
-  const data = await getPanelPerformanceService(requestData);
+    const data = await getPanelPerformanceService(requestData);
 
-  return successResponse(res, "Panel performance fetched successfully", data);
-});
+    return successResponse(res, "Panel performance fetched successfully", data);
+  } catch (error) {
+    console.error("Error in getPanelPerformance:", error);
+    return errorResponse(res, error.message, 500);
+  }
+};
 
 // Efficiency
-export const getPanelEfficiency = asyncHandler(async (req, res) => {
+export const getPanelEfficiency = async (req, res) => {
+  try {
   const requestData = buildRequestData(req);
 
   const error = validateAnalyticsRequest(requestData);
@@ -88,7 +107,11 @@ export const getPanelEfficiency = asyncHandler(async (req, res) => {
     return errorResponse(res, error, 400);
   }
 
-  const data = await getPanelEfficiencyService(requestData);
+    const data = await getPanelEfficiencyService(requestData);
 
-  return successResponse(res, "Efficiency fetched successfully", data);
-});
+    return successResponse(res, "Efficiency fetched successfully", data);
+  } catch (error) {
+    console.error("Error in getPanelEfficiency:", error);
+    return errorResponse(res, error.message, 500);
+  }
+};

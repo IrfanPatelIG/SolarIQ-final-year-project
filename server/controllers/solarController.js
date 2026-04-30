@@ -1,4 +1,3 @@
-import asyncHandler from "../utils/asyncHandler.js";
 import {
   successResponse,
   errorResponse,
@@ -10,8 +9,8 @@ import {
   processSolarRequest,
 } from "../services/solar/solarService.js";
 
-export const getSolarData = asyncHandler(
-  async (req, res) => {
+export const getSolarData = async (req, res) => {
+  try {
     const validationError =
       validateSolarRequest(
         req.body
@@ -36,5 +35,8 @@ export const getSolarData = asyncHandler(
       result,
       200
     );
+  } catch (error) {
+    console.error("Error in getSolarData:", error);
+    return errorResponse(res, error.message, 500);
   }
-);
+};

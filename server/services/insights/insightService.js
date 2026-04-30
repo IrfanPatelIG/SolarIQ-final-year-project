@@ -8,7 +8,9 @@ import {
 
 import { getTiltFactor, getOrientationFactor } from "../solar/solarService.js";
 
+import { generateAlerts } from "./alertEngine.js";
 import { generateRecommendations } from "./recommendationService.js";
+import { calculatePerformanceScore } from "./scoreEngine.js";
 
 // ===================================================
 // Public Services
@@ -18,6 +20,8 @@ export const getAlertsService = async (requestData) => {
   const insights = await buildInsightPayload(requestData);
 
   return {
+    panelId: insights.panelId,
+    score: insights.score,
     alerts: insights.alerts,
   };
 };
@@ -26,8 +30,14 @@ export const getRecommendationsService = async (requestData) => {
   const insights = await buildInsightPayload(requestData);
 
   return {
+    panelId: insights.panelId,
+    score: insights.score,
     recommendations: insights.recommendations,
   };
+};
+
+export const getFullInsightsService = async (requestData) => {
+  return await buildInsightPayload(requestData);
 };
 
 // ===================================================
@@ -64,14 +74,42 @@ const buildInsightPayload = async ({ userId, panelId, startDate, endDate }) => {
 
   const orientationFactor = getOrientationFactor(panel.orientation);
 
-  return generateRecommendations({
+  const factors = {
+    tiltFactor,
+    orientationFactor,
+  };
+
+  const alerts = generateAlerts({
     weather: avgWeather,
-    factors: {
-      tiltFactor,
-      orientationFactor,
-    },
     totalEnergy,
+    factors,
+    panel,
   });
+
+  const recommendations = generateRecommendations({
+    weather: avgWeather,
+    totalEnergy,
+    factors,
+    panel,
+  });
+
+  const score = calculatePerformanceScore({
+    weather: avgWeather,
+    totalEnergy,
+    factors,
+  });
+
+  return {
+    panelId: Number(panelId),
+    score,
+    alerts,
+    recommendations,
+    summary: {
+      totalEnergy,
+      avgWeather,
+      factors,
+    },
+  };
 };
 
 // ===================================================

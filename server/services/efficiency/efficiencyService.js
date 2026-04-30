@@ -27,16 +27,19 @@ export const calculateEfficiency = async ({
   startDate,
   endDate,
 }) => {
-  const { panel, location, forecasts, weather } =
-    await getFullPanelData(panelId, startDate, endDate);
+  try {
+    const { panel, location, forecasts, weather } =
+      await getFullPanelData(panelId, startDate, endDate);
 
-  if (!panel || !location) {
-    throw new Error("Panel data not found");
-  }
+    if (!panel || !location) {
+      console.error("Panel data not found");
+      throw new Error("Panel data not found");
+    }
 
-  if (!forecasts.length) {
-    throw new Error("No forecast data for this range");
-  }
+    if (!forecasts.length) {
+      console.error("No forecast data for this range");
+      throw new Error("No forecast data for this range");
+    }
 
   // Panel constants
   const tiltFactor = getTiltFactor(
@@ -108,6 +111,9 @@ export const calculateEfficiency = async ({
   }
 
   if (!daily.length) {
+    console.error(
+      "No weather-matched daily efficiency data found"
+    );
     throw new Error(
       "No weather-matched daily efficiency data found"
     );
@@ -162,4 +168,8 @@ export const calculateEfficiency = async ({
       daily,
     },
   };
+  } catch (error) {
+    console.error("Error in calculateEfficiency:", error);
+    throw error;
+  }
 };

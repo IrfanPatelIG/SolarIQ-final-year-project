@@ -1,11 +1,11 @@
-import asyncHandler from "../utils/asyncHandler.js";
 import { successResponse, errorResponse } from "../utils/apiResponse.js";
 
 import { validateDashboardRequest } from "../validators/dashboardValidator.js";
 
 import { getDashboardService } from "../services/dashboard/dashboardService.js";
 
-export const getDashboardData = asyncHandler(async (req, res) => {
+export const getDashboardData = async (req, res) => {
+  try {
   const requestData = {
     panelId: req.params.panelId,
     startDate: req.query.startDate,
@@ -19,7 +19,11 @@ export const getDashboardData = asyncHandler(async (req, res) => {
     return errorResponse(res, validationError, 400);
   }
 
-  const data = await getDashboardService(requestData);
+    const data = await getDashboardService(requestData);
 
-  return successResponse(res, "Dashboard fetched successfully", data);
-});
+    return successResponse(res, "Dashboard fetched successfully", data);
+  } catch (error) {
+    console.error("Error in getDashboardData:", error);
+    return errorResponse(res, error.message, 500);
+  }
+};

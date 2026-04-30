@@ -52,20 +52,26 @@ export const calculateTotalEnergy = (forecasts) => {
 
 // Average weather
 export const calculateAvgWeather = (weatherData) => {
-  if (!weatherData.length) {
-    throw new Error("Cannot calculate average weather: no data");
+  try {
+    if (!weatherData.length) {
+      console.error("Cannot calculate average weather: no data");
+      throw new Error("Cannot calculate average weather: no data");
+    }
+
+    const avg = (field) =>
+      weatherData.reduce((sum, row) => sum + (row[field] || 0), 0) /
+      weatherData.length;
+
+    return {
+      temperature: avg("temperature"),
+      cloud_cover: avg("cloud_cover"),
+      humidity: avg("humidity"),
+      precipitation: avg("precipitation"),
+      wind_speed: avg("wind_speed"),
+      air_pressure: avg("air_pressure"),
+    };
+  } catch (error) {
+    console.error("Error in calculateAvgWeather:", error);
+    throw error;
   }
-
-  const avg = (field) =>
-    weatherData.reduce((sum, row) => sum + (row[field] || 0), 0) /
-    weatherData.length;
-
-  return {
-    temperature: avg("temperature"),
-    cloud_cover: avg("cloud_cover"),
-    humidity: avg("humidity"),
-    precipitation: avg("precipitation"),
-    wind_speed: avg("wind_speed"),
-    air_pressure: avg("air_pressure"),
-  };
 };
