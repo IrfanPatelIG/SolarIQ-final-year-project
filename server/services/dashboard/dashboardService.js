@@ -44,6 +44,8 @@ export const getDashboardService = async ({
     throw new AppError("Unauthorized panel access", 403);
   }
 
+  const panelMeta = await getUserPanelMeta(userId, panelId);
+
   const totalEnergy = calculateTotalEnergy(forecasts);
 
   const avgWeather = safeWeatherAverage(weather);
@@ -89,6 +91,7 @@ export const getDashboardService = async ({
     },
 
     meta: {
+      ...panelMeta,
       weatherAvailable: weather.length > 0,
     },
   };
@@ -111,6 +114,30 @@ const safeWeatherAverage = (weather) => {
       air_pressure: 0,
     };
   }
+};
+
+const getUserPanelMeta = async (userId, panelId) => {
+  const panels = await Panel.findAll({
+    where: {
+      user_id: userId,
+    },
+    attributes: ["panel_id"],
+    order: [
+      ["createdAt", "ASC"],
+      ["panel_id", "ASC"],
+    ],
+  });
+
+  const totalPanels = panels.length;
+  const index = panels.findIndex(
+    (panel) => Number(panel.panel_id) === Number(panelId),
+  );
+
+  return {
+    panelId: Number(panelId),
+    userPanelId: index >= 0 ? index + 1 : Number(panelId),
+    totalPanels,
+  };
 };
 
 const getPanelPerformance = async (userId, startDate, endDate) => {
