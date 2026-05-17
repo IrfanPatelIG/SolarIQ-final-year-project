@@ -188,9 +188,47 @@ const Onboarding = () => {
     try {
       setSubmitting(true);
       setError("");
+      
+      console.log('⚙️ Solar Setup Configuration:', {
+        location: {
+          type: locationType,
+          coordinates: finalCoords,
+        },
+        panel: {
+          area: `${panelArea} m²`,
+          tilt: `${tilt}°`,
+          orientation,
+        },
+        dates: {
+          startDate,
+          endDate,
+        },
+      });
+      
       const response = await solarAPI.getSolarData(setupData);
       const result = response.data || response;
       const panelId = result?.db?.panel?.panel_id;
+
+      console.log('✅ Solar Panel Installed Successfully:', {
+        panelId,
+        location: {
+          city: result?.db?.location?.city,
+          state: result?.db?.location?.state,
+          country: result?.db?.location?.country,
+          latitude: result?.db?.location?.latitude,
+          longitude: result?.db?.location?.longitude,
+        },
+        panel: {
+          area: result?.db?.panel?.area,
+          tilt: result?.db?.panel?.tilt,
+          orientation: result?.db?.panel?.orientation,
+        },
+        predictions: {
+          totalEnergy: result?.summary?.totalEnergy,
+          days: result?.summary?.days,
+          factors: result?.factors,
+        },
+      });
 
       navigate(panelId ? `/dashboard/${panelId}` : '/dashboard');
     } catch (error) {

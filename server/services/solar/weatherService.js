@@ -1,5 +1,29 @@
 import axios from "axios";
 
+export const getCurrentWeather = async (lat, lon) => {
+  const response = await axios.get(
+    "https://api.openweathermap.org/data/2.5/weather",
+    {
+      params: {
+        lat,
+        lon,
+        appid: process.env.WEATHER_API_KEY,
+        units: "metric",
+      },
+    }
+  );
+
+  return {
+    temperature: response.data?.main?.temp || 0,
+    humidity: response.data?.main?.humidity || 0,
+    cloud_cover: response.data?.clouds?.all || 0,
+    wind_speed: response.data?.wind?.speed || 0,
+    air_pressure: response.data?.main?.pressure || 0,
+    precipitation: response.data?.rain?.["1h"] || response.data?.rain?.["3h"] || 0,
+    description: response.data?.weather?.[0]?.description || "",
+  };
+};
+
 export const getForecastData = async (lat, lon) => {
   const response = await axios.get(
     "https://api.openweathermap.org/data/2.5/forecast",

@@ -87,19 +87,31 @@ export const processSolarRequest = async (req) => {
 
     const dailyWeather = groupForecastToDaily(forecastApi.forecastList);
 
-    // 3 Save Location
-    const savedLocation = await Location.create(
-      {
+    // 3 Check if location with same lat/long exists for this user
+    let savedLocation = await Location.findOne({
+      where: {
         latitude: lat,
         longitude: lon,
-        city: geo.city,
-        state: geo.state,
-        country: geo.country,
-        timezone: forecastApi.timezone,
         user_id: userId,
       },
-      { transaction },
-    );
+      transaction,
+    });
+
+    // If not found, create new location
+    if (!savedLocation) {
+      savedLocation = await Location.create(
+        {
+          latitude: lat,
+          longitude: lon,
+          city: geo.city,
+          state: geo.state,
+          country: geo.country,
+          timezone: forecastApi.timezone,
+          user_id: userId,
+        },
+        { transaction },
+      );
+    }
 
     // 4 Save Panel
     const savedPanel = await Panel.create(

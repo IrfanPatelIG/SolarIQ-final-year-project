@@ -1,3 +1,5 @@
+import { isValidDateRange, isValidDateRangeWithin5Days } from "../helpers/dateHelper.js";
+
 const allowedOrientations = ["N", "S", "E", "W", "NE", "NW", "SE", "SW"];
 
 export const validateSolarRequest = (body) => {
@@ -39,8 +41,12 @@ export const validateSolarRequest = (body) => {
     return "startDate and endDate are required";
   }
 
-  if (new Date(startDate) > new Date(endDate)) {
+  if (!isValidDateRange(startDate, endDate)) {
     return "startDate cannot be after endDate";
+  }
+
+  if (!isValidDateRangeWithin5Days(startDate, endDate)) {
+    return "Date range must be within 5 days including today";
   }
 
   return null;

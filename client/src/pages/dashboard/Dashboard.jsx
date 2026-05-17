@@ -66,15 +66,18 @@ const normalizeDashboardData = (dashboardData) => {
   );
   const efficiencyScore = dashboardData.efficiency?.overall?.efficiencyScore ?? 0;
 
+  // Use currentWeather if available, otherwise fallback to forecast weather
+  const currentWeather = dashboardData.currentWeather || firstWeather;
+
   return {
     currentGeneration: formatNumber(dashboardData.heroCard?.energy),
     predictedYield: formatNumber(totalForecastEnergy),
     efficiency: formatNumber(efficiencyScore),
     weather: {
-      temp: Math.round(Number(firstWeather.temperature || 0)),
-      humidity: Math.round(Number(firstWeather.humidity || 0)),
-      uvIndex: firstWeather.cloud_cover !== undefined
-        ? `${Math.round(Number(firstWeather.cloud_cover))}% clouds`
+      temp: Math.round(Number(currentWeather.temperature || 0)),
+      humidity: Math.round(Number(currentWeather.humidity || 0)),
+      uvIndex: currentWeather.cloud_cover !== undefined
+        ? `${Math.round(Number(currentWeather.cloud_cover))}% clouds`
         : 'N/A',
     },
     alerts: (dashboardData.insights?.alerts || []).map(normalizeAlert),
@@ -185,6 +188,20 @@ const PanelList = () => {
 const Dashboard = () => {
   const { panelId } = useParams();
   const { data: dashboardData, loading, error } = useDashboard(panelId);
+
+  // Console log dashboard data when loaded
+  React.useEffect(() => {
+    if (dashboardData) {
+      console.log('📊 Dashboard Data Loaded:', {
+        panelId,
+        currentGeneration: dashboardData?.heroCard?.energy,
+        forecast: dashboardData?.forecast,
+        efficiency: dashboardData?.efficiency,
+        alerts: dashboardData?.insights?.alerts,
+        weather: dashboardData?.weather,
+      });
+    }
+  }, [dashboardData, panelId]);
 
   if (!panelId) {
     return <PanelList />;

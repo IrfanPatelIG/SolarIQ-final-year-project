@@ -16,11 +16,15 @@ export const useSolarData = (solarData = null) => {
       setLoading(true);
       setError(null);
       try {
+        console.log('🌞 Fetching solar data with config:', solarData);
         const response = await solarAPI.getSolarData(solarData);
-        setData(response.data || response);
+        console.log('📊 Raw API Response:', response);
+        const processedData = response.data || response;
+        console.log('✅ Processed Solar Data:', processedData);
+        setData(processedData);
       } catch (err) {
         setError(err.message || 'Failed to fetch solar data');
-        console.error('Solar data fetch error:', err);
+        console.error('❌ Solar data fetch error:', err);
       } finally {
         setLoading(false);
       }

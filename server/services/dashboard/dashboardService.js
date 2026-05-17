@@ -20,6 +20,8 @@ import {
 
 import { getFullInsightsService } from "../insights/insightService.js";
 
+import { getCurrentWeather } from "../solar/weatherService.js";
+
 // ===================================================
 // Main Service
 // ===================================================
@@ -54,6 +56,24 @@ export const getDashboardService = async ({
 
   const heroCard = getSelectedDayEnergy(forecasts, startDate);
 
+  // Fetch current weather for the panel's location
+  let currentWeather = null;
+  try {
+    currentWeather = await getCurrentWeather(location.latitude, location.longitude);
+  } catch (error) {
+    console.error("Error fetching current weather:", error);
+    // Fallback to first available weather data from database
+    currentWeather = weather.length > 0 ? {
+      temperature: weather[0].temperature,
+      humidity: weather[0].humidity,
+      cloud_cover: weather[0].cloud_cover,
+      wind_speed: weather[0].wind_speed,
+      air_pressure: weather[0].air_pressure,
+      precipitation: weather[0].precipitation,
+      description: "",
+    } : null;
+  }
+
   const [panelPerformance, efficiencyData, insightsData] = await Promise.all([
     getPanelPerformance(userId, startDate, endDate),
 
@@ -83,6 +103,8 @@ export const getDashboardService = async ({
     },
 
     efficiency: efficiencyData.efficiency,
+
+    currentWeather,
 
     insights: {
       score: insightsData.score,

@@ -1,6 +1,20 @@
 import { Calendar } from 'lucide-react';
 
 const DateCard = ({ startDate, setStartDate, endDate, setEndDate }) => {
+  const handleStartDateChange = (e) => {
+    const newStartDate = e.target.value;
+    setStartDate(newStartDate);
+
+    // Auto-select end date to start date + 5 days
+    if (newStartDate) {
+      const start = new Date(newStartDate);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 5);
+      const newEndDate = end.toISOString().slice(0, 10);
+      setEndDate(newEndDate);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
       <div className="flex items-center gap-3 mb-6">
@@ -16,7 +30,7 @@ const DateCard = ({ startDate, setStartDate, endDate, setEndDate }) => {
           <input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={handleStartDateChange}
             className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
           />
         </div>

@@ -29,6 +29,10 @@ const Panel = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    location_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     tableName: "panel_configs",
