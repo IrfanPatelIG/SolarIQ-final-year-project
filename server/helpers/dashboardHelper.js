@@ -5,7 +5,10 @@ import { formatDateKey } from "./dateHelper.js";
 // ===================================================
 
 export const getTargetDate = (startDate) => {
-  return startDate ? formatDateKey(startDate) : formatDateKey(new Date());
+  if (!startDate) {
+    throw new Error("startDate is required to get target date from database");
+  }
+  return formatDateKey(startDate);
 };
 
 export const getSelectedDayEnergy = (forecasts, startDate) => {
@@ -84,6 +87,7 @@ export const buildWeatherImpact = (forecasts, weather) => {
       energy: item.predicted_energy_kwh,
       temperature: w?.temperature || 0,
       cloud_cover: w?.cloud_cover || 0,
+      weather_recorded_at: w?.recorded_at || null,
     };
   });
 };

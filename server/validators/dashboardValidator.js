@@ -10,16 +10,15 @@ export const validateDashboardRequest = ({
     return "Invalid panelId";
   }
 
-  if (!startDate || !endDate) {
-    return "startDate and endDate required";
-  }
-
-  if (!isValidDateRange(startDate, endDate)) {
-    return "startDate cannot be after endDate";
-  }
-
   if (!userId) {
     return "User not authenticated";
+  }
+
+  // If startDate or endDate is not provided, we'll fetch available dates from database
+  if (startDate && endDate) {
+    if (!isValidDateRange(startDate, endDate)) {
+      return "startDate cannot be after endDate";
+    }
   }
 
   return null;

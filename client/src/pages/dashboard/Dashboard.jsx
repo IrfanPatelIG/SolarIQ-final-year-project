@@ -10,10 +10,20 @@ import {
   SlidersHorizontal,
   TrendingUp,
   Zap,
+  Sun,
+  Gauge,
+  Compass,
+  Droplets,
+  Thermometer,
+  Target,
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import { useDashboard } from '../../hooks/useDashboard.js';
 import { usePanels } from '../../hooks/usePanels.js';
+import HeroForecastCard from '../../components/dashboard/HeroForecastCard.jsx';
+import EnergyForecastChart from '../../components/dashboard/EnergyForecastChart.jsx';
+import WeatherVsEnergyChart from '../../components/dashboard/WeatherVsEnergyChart.jsx';
+import WeatherGauges from '../../components/dashboard/WeatherGauges.jsx';
 
 const formatLocation = (location) => {
   if (!location) return 'Location not available';
@@ -187,27 +197,50 @@ const PanelList = () => {
 
 const Dashboard = () => {
   const { panelId } = useParams();
-  const { data: dashboardData, loading, error } = useDashboard(panelId);
+  const [startDate, setStartDate] = React.useState(null);
+  const [endDate, setEndDate] = React.useState(null);
+  const [selectedDate, setSelectedDate] = React.useState(null);
+  const [hasFetchedDates, setHasFetchedDates] = React.useState(false);
 
-  // Console log dashboard data when loaded
+  const { data: dashboardData, loading, error } = useDashboard(panelId, startDate, endDate);
+
+  // Initially fetch without dates to get available dates
   React.useEffect(() => {
-    if (dashboardData) {
-      console.log('📊 Dashboard Data Loaded:', {
-        panelId,
-        currentGeneration: dashboardData?.heroCard?.energy,
-        forecast: dashboardData?.forecast,
-        efficiency: dashboardData?.efficiency,
-        alerts: dashboardData?.insights?.alerts,
-        weather: dashboardData?.weather,
-      });
+    if (panelId && !hasFetchedDates) {
+      setHasFetchedDates(true);
     }
-  }, [dashboardData, panelId]);
+  }, [panelId, hasFetchedDates]);
+
+  // Set default date range when available dates are loaded
+  React.useEffect(() => {
+    if (dashboardData?.meta?.availableDates && dashboardData.meta.availableDates.length > 0 && !startDate && !endDate) {
+      const availableDates = dashboardData.meta.availableDates;
+      const firstDate = availableDates[0];
+      
+      setStartDate(firstDate);
+      setEndDate(firstDate);
+      setSelectedDate(new Date(firstDate));
+    }
+  }, [dashboardData?.meta?.availableDates, startDate, endDate]);
+
+  // Handle date dropdown change
+  const handleDateChange = (e) => {
+    const selected = new Date(e.target.value);
+    setSelectedDate(selected);
+    const formattedDate = selected.toISOString().split('T')[0];
+    setStartDate(formattedDate);
+    setEndDate(formattedDate);
+  };
+
+  // Get available dates from database
+  const getAvailableDates = () => {
+    return dashboardData?.meta?.availableDates || [];
+  };
 
   if (!panelId) {
     return <PanelList />;
   }
 
-  const displayData = normalizeDashboardData(dashboardData);
   const userPanelId = dashboardData?.meta?.userPanelId || panelId;
   const totalPanels = dashboardData?.meta?.totalPanels;
 
@@ -238,137 +271,147 @@ const Dashboard = () => {
   return (
     <Layout>
       <div className="p-8 max-w-7xl mx-auto space-y-8">
+        {/* Page Header with Date Selector */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Operational Overview</h2>
+            <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Dashboard</h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-              Live data from Solar Panel #{userPanelId}
+              Live monitoring for Panel #{userPanelId}
               {totalPanels ? ` of ${totalPanels}` : ''}
             </p>
           </div>
-          <div className="flex items-center gap-2 bg-yellow-500 text-slate-900 px-4 py-2 rounded-lg font-bold text-sm">
-            <Zap size={18} />
-            CURRENT GENERATION: {displayData.currentGeneration} kWh
+
+          {/* Date Dropdown */}
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5">
+            <label className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest">Select Date:</label>
+            <select
+              value={selectedDate ? selectedDate.toISOString().split('T')[0] : ''}
+              onChange={handleDateChange}
+              className="bg-transparent border-none text-slate-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer"
+            >
+              {getAvailableDates().map((date) => (
+                <option key={date} value={date}>
+                  {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Cloud className="text-blue-600 dark:text-blue-400" size={64} />
-            </div>
-            <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Local Weather</h3>
-            <div className="flex items-center gap-4">
-              <div className="text-5xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tighter">{displayData.weather.temp} C</div>
-              <div className="space-y-1">
-                <div className="flex items-center text-xs text-slate-500 dark:text-slate-400">
-                  <Activity className="mr-1" size={16} /> {displayData.weather.humidity}% Humidity
-                </div>
-                <div className="flex items-center text-xs text-slate-500 dark:text-slate-400">
-                  <Zap className="mr-1" size={16} /> {displayData.weather.uvIndex}
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center">
-                <Lightbulb className="mr-1" size={16} /> Weather impact estimate
-              </p>
-            </div>
-          </div>
+        {/* Hero Forecast Card */}
+        <HeroForecastCard
+          heroCard={dashboardData?.heroCard}
+          currentWeather={dashboardData?.currentWeather}
+          panelInfo={dashboardData?.db?.panel}
+        />
 
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <TrendingUp className="text-yellow-500" size={64} />
-            </div>
-            <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Predicted Yield</h3>
-            <div className="text-5xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tighter">
-              {displayData.predictedYield}<span className="text-2xl font-bold ml-1 text-slate-500 dark:text-slate-400">kWh</span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Expected across selected forecast range</p>
-            <div className="mt-4 w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-yellow-500 h-full w-3/4 rounded-full"></div>
-            </div>
-          </div>
+        {/* Energy Forecast Chart */}
+        <EnergyForecastChart forecast={dashboardData?.forecast} />
 
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
-            <div>
-              <h3 className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">System Efficiency</h3>
-              <div className="flex items-baseline gap-2">
-                <div className="text-5xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tighter">{displayData.efficiency}%</div>
-                <span className="text-green-600 dark:text-green-400 text-sm font-bold flex items-center">
-                  <TrendingUp size={16} /> score
-                </span>
-              </div>
-            </div>
-            <div className="mt-4 flex gap-1">
-              <div className="h-8 flex-1 bg-blue-600/5 rounded-sm"></div>
-              <div className="h-10 flex-1 bg-blue-600/10 rounded-sm"></div>
-              <div className="h-12 flex-1 bg-blue-600/20 rounded-sm"></div>
-              <div className="h-14 flex-1 bg-blue-600/40 rounded-sm"></div>
-              <div className="h-16 flex-1 bg-blue-600 rounded-sm"></div>
-            </div>
-          </div>
-        </div>
+        {/* Weather vs Energy Chart */}
+        <WeatherVsEnergyChart weatherImpact={dashboardData?.analytics?.weatherImpact} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="bg-red-100 dark:bg-red-900/30 px-6 py-4 flex justify-between items-center">
-              <h3 className="text-sm font-extrabold text-red-900 dark:text-red-100 uppercase tracking-wider flex items-center">
-                <AlertTriangle className="mr-2" size={18} /> System Alerts
-              </h3>
-              <span className="bg-red-900 dark:bg-red-700 text-white px-2 py-0.5 rounded text-[10px] font-bold">{displayData.alerts.length} ACTIVE</span>
-            </div>
-            <div className="divide-y divide-slate-200 dark:divide-slate-800">
-              {displayData.alerts.length === 0 && (
-                <div className="p-6">
-                  <p className="text-sm text-slate-500 dark:text-slate-400">No active alerts for this panel.</p>
-                </div>
-              )}
-              {displayData.alerts.map((alert) => (
-                <div key={alert.id} className="p-6 flex gap-4 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all group">
-                  <div className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center ${
-                    alert.type === 'critical' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-slate-200 dark:bg-slate-700'
+        {/* Weather Gauges */}
+        <WeatherGauges currentWeather={dashboardData?.currentWeather} />
+
+        {/* Alerts Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="text-red-600 dark:text-red-400" size={24} />
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Active Alerts</h3>
+            <span className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold px-2 py-1 rounded-full">
+              {dashboardData?.insights?.alerts?.length || 0}
+            </span>
+          </div>
+          {dashboardData?.insights?.alerts && dashboardData?.insights?.alerts.length > 0 ? (
+            <div className="space-y-3 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+              {dashboardData?.insights?.alerts.map((alert, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border-l-4 ${
+                    alert.severity === 'high'
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                      : alert.severity === 'medium'
+                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500'
+                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'
                   }`}
-                  >
-                    <AlertTriangle className={alert.type === 'critical' ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-400'} size={20} />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{alert.title}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{alert.desc}</p>
-                    <span className="text-[10px] text-red-600 dark:text-red-400 font-bold mt-2 block">{alert.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center">
-                <Lightbulb className="mr-2" size={18} /> Smart Recommendations
-              </h3>
-            </div>
-            <div className="p-6 space-y-6 flex-1">
-              {displayData.recommendations.length === 0 && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No recommendations available yet.</p>
-              )}
-              {displayData.recommendations.map((rec, idx) => (
-                <div key={rec.id} className={`relative pl-6 p-4 -m-4 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:shadow-sm transition-all before:absolute before:left-0 before:top-4 before:bottom-4 before:w-1 before:rounded-full ${
-                  idx === 0 ? 'before:bg-yellow-500' : 'before:bg-blue-600'
-                }`}
                 >
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{rec.title}</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{rec.desc}</p>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100 capitalize flex items-center gap-2">
+                        {alert.type} Alert
+                        <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${
+                          alert.severity === 'high'
+                            ? 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
+                            : alert.severity === 'medium'
+                            ? 'bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200'
+                            : 'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200'
+                        }`}>
+                          {alert.severity}
+                        </span>
+                      </h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{alert.message}</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
+              <p className="text-slate-500 dark:text-slate-400">No active alerts for this panel</p>
+            </div>
+          )}
+        </div>
+
+        {/* Recommendations Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="text-blue-600 dark:text-blue-400" size={24} />
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Recommendations</h3>
+            <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-1 rounded-full">
+              {dashboardData?.insights?.recommendations?.length || 0}
+            </span>
           </div>
+          {dashboardData?.insights?.recommendations && dashboardData?.insights?.recommendations.length > 0 ? (
+            <div className="space-y-3 bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+              {dashboardData?.insights?.recommendations.map((rec, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border-l-4 ${
+                    rec.priority === 'high'
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                      : rec.priority === 'medium'
+                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500'
+                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-500'
+                  }`}
+                >
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 capitalize flex items-center gap-2">
+                    {rec.category} Recommendation
+                    <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${
+                      rec.priority === 'high'
+                        ? 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
+                        : rec.priority === 'medium'
+                        ? 'bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200'
+                        : 'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200'
+                    }`}>
+                      {rec.priority}
+                    </span>
+                  </h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{rec.message}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
+              <p className="text-slate-500 dark:text-slate-400">No recommendations for this panel</p>
+            </div>
+          )}
         </div>
       </div>
 
-      <button className="fixed bottom-8 right-8 bg-gradient-to-br from-blue-600 to-blue-800 text-white p-4 rounded-2xl shadow-2xl active:scale-95 transition-all flex items-center gap-2 group z-50">
+      <button className="fixed bottom-8 right-8 bg-gradient-to-br from-blue-600 to-blue-800 text-white p-4 rounded-2xl shadow-2xl active:scale-95 transition-all flex items-center gap-2 group z-50 hover:shadow-lg hover:shadow-blue-600/50">
         <Plus size={24} />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out font-bold text-sm whitespace-nowrap">Create Report</span>
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out font-bold text-sm whitespace-nowrap">View Report</span>
       </button>
     </Layout>
   );

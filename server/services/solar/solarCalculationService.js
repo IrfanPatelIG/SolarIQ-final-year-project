@@ -87,19 +87,19 @@ export const buildSolarForecastRows = async ({
 
     weatherRows.push({
       location_id: locationId,
-      temperature: Number(day.temperature.toFixed(2)),
-      humidity: Number(day.humidity.toFixed(2)),
-      solar_irradiance: Number(solar_irradiance.toFixed(2)),
-      cloud_cover: Number(day.cloud_cover.toFixed(2)),
-      wind_speed: Number(day.wind_speed.toFixed(2)),
-      precipitation: Number(day.precipitation.toFixed(2)),
-      air_pressure: Number(day.air_pressure.toFixed(2)),
+      temperature: Number(day.temperature.toFixed(3)),
+      humidity: Number(day.humidity.toFixed(3)),
+      solar_irradiance: Number(solar_irradiance.toFixed(3)),
+      cloud_cover: Number(day.cloud_cover.toFixed(3)),
+      wind_speed: Number(day.wind_speed.toFixed(3)),
+      precipitation: Number(day.precipitation.toFixed(3)),
+      air_pressure: Number(day.air_pressure.toFixed(3)),
       recorded_at: currentDate,
     });
 
     forecasts.push({
       forecast_date: currentDate,
-      predicted_energy_kwh: Number(dailyEnergy.toFixed(2)),
+      predicted_energy_kwh: Number(dailyEnergy.toFixed(3)),
       location_id: locationId,
       panel_id: panelId,
       model_version: "v3",
@@ -109,7 +109,7 @@ export const buildSolarForecastRows = async ({
   return {
     forecasts,
     weatherRows,
-    totalEnergy: Number(totalEnergy.toFixed(2)),
+    totalEnergy: Number(totalEnergy.toFixed(3)),
   };
 };
 

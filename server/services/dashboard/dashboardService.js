@@ -20,8 +20,6 @@ import {
 
 import { getFullInsightsService } from "../insights/insightService.js";
 
-import { getCurrentWeather } from "../solar/weatherService.js";
-
 // ===================================================
 // Main Service
 // ===================================================
@@ -32,10 +30,11 @@ export const getDashboardService = async ({
   endDate,
   userId,
 }) => {
+  // If no date range provided, fetch all data for the panel to get available dates
   const { panel, location, forecasts, weather } = await getFullPanelData(
     panelId,
-    startDate,
-    endDate,
+    startDate || '1970-01-01',
+    endDate || '2099-12-31',
   );
 
   if (!panel || !location) {
@@ -48,30 +47,77 @@ export const getDashboardService = async ({
 
   const panelMeta = await getUserPanelMeta(userId, panelId);
 
-  const totalEnergy = calculateTotalEnergy(forecasts);
+  // Get available dates for this panel from database
+  const availableDates = forecasts.map(f => f.forecast_date).sort();
 
-  const avgWeather = safeWeatherAverage(weather);
+  // If no date range provided, return only available dates
+  if (!startDate || !endDate) {
+    return {
+      meta: {
+        ...panelMeta,
+        weatherAvailable: weather.length > 0,
+        availableDates,
+      },
+    };
+  }
 
-  const forecast = buildForecast(forecasts);
+  // Filter forecasts and weather by the requested date range
+  const filteredForecasts = forecasts.filter(f => {
+    const date = new Date(f.forecast_date).toISOString().split('T')[0];
+    return date >= startDate && date <= endDate;
+  });
 
-  const heroCard = getSelectedDayEnergy(forecasts, startDate);
+  const filteredWeather = weather.filter(w => {
+    const date = new Date(w.recorded_at).toISOString().split('T')[0];
+    return date >= startDate && date <= endDate;
+  });
 
-  // Fetch current weather for the panel's location
+  const totalEnergy = calculateTotalEnergy(filteredForecasts);
+
+  const avgWeather = filteredWeather.length > 0 ? safeWeatherAverage(filteredWeather) : {
+    temperature: 0,
+    cloud_cover: 0,
+    humidity: 0,
+    precipitation: 0,
+    wind_speed: 0,
+    air_pressure: 0,
+  };
+
+  const forecast = buildForecast(filteredForecasts);
+
+  const heroCard = getSelectedDayEnergy(filteredForecasts, startDate);
+
+  // Use database weather data for consistency (not external API)
   let currentWeather = null;
-  try {
-    currentWeather = await getCurrentWeather(location.latitude, location.longitude);
-  } catch (error) {
-    console.error("Error fetching current weather:", error);
-    // Fallback to first available weather data from database
-    currentWeather = weather.length > 0 ? {
-      temperature: weather[0].temperature,
-      humidity: weather[0].humidity,
-      cloud_cover: weather[0].cloud_cover,
-      wind_speed: weather[0].wind_speed,
-      air_pressure: weather[0].air_pressure,
-      precipitation: weather[0].precipitation,
-      description: "",
-    } : null;
+  if (filteredWeather.length > 0) {
+    // Get weather data for the start date (today's date)
+    const targetDate = new Date(startDate).toISOString().split('T')[0];
+    const exactWeather = filteredWeather.find(
+      (w) => new Date(w.recorded_at).toISOString().split('T')[0] === targetDate
+    );
+    
+    if (exactWeather) {
+      currentWeather = {
+        temperature: exactWeather.temperature,
+        humidity: exactWeather.humidity,
+        cloud_cover: exactWeather.cloud_cover,
+        wind_speed: exactWeather.wind_speed,
+        air_pressure: exactWeather.air_pressure,
+        precipitation: exactWeather.precipitation,
+        description: "",
+      };
+    } else {
+      // Fallback to first available weather data
+      currentWeather = {
+        temperature: filteredWeather[0].temperature,
+        humidity: filteredWeather[0].humidity,
+        cloud_cover: filteredWeather[0].cloud_cover,
+        wind_speed: filteredWeather[0].wind_speed,
+        air_pressure: filteredWeather[0].air_pressure,
+        precipitation: filteredWeather[0].precipitation,
+        description: "",
+      };
+    }
   }
 
   const [panelPerformance, efficiencyData, insightsData] = await Promise.all([
@@ -97,8 +143,8 @@ export const getDashboardService = async ({
 
     analytics: {
       dailyEnergy: forecast,
-      weatherImpact: buildWeatherImpact(forecasts, weather),
-      distribution: buildDistribution(forecasts),
+      weatherImpact: buildWeatherImpact(filteredForecasts, filteredWeather),
+      distribution: buildDistribution(filteredForecasts),
       panelPerformance,
     },
 
@@ -112,9 +158,28 @@ export const getDashboardService = async ({
       recommendations: insightsData.recommendations,
     },
 
+    db: {
+      panel: {
+        panel_id: panel.panel_id,
+        area: panel.area,
+        tilt: panel.tilt,
+        orientation: panel.orientation,
+        installation_date: panel.installation_date,
+      },
+      location: {
+        location_id: location.location_id,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        city: location.city,
+        state: location.state,
+        country: location.country,
+      },
+    },
+
     meta: {
       ...panelMeta,
       weatherAvailable: weather.length > 0,
+      availableDates,
     },
   };
 };

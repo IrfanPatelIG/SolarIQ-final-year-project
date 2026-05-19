@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as dashboardAPI from '../api/dashboardAPI.js';
 
-export const useDashboard = (panelId) => {
+export const useDashboard = (panelId, startDate = null, endDate = null) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,7 +16,7 @@ export const useDashboard = (panelId) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await dashboardAPI.getDashboardData(panelId);
+        const response = await dashboardAPI.getDashboardData(panelId, startDate, endDate);
         setData(response.data || response);
       } catch (err) {
         setError(err.message || 'Failed to fetch dashboard data');
@@ -27,7 +27,7 @@ export const useDashboard = (panelId) => {
     };
 
     fetchData();
-  }, [panelId]);
+  }, [panelId, startDate, endDate]);
 
   return { data, loading, error };
 };

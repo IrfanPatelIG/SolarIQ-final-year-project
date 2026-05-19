@@ -1,48 +1,79 @@
 import React from 'react';
-import { BarChart3, TrendingUp, Sun, Activity, Download, Cloud, CloudRain, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { BarChart3, TrendingUp, Sun, Activity, Download, AlertTriangle } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
-import { useAnalytics } from '../../hooks/useAnalytics.js';
+import { useDashboard } from '../../hooks/useDashboard.js';
+import EfficiencyChart from '../../components/analytics/EfficiencyChart.jsx';
+import EfficiencyBreakdownChart from '../../components/analytics/EfficiencyBreakdownChart.jsx';
+import PanelPerformanceChart from '../../components/analytics/PanelPerformanceChart.jsx';
+import CloudCoverScatterPlot from '../../components/analytics/CloudCoverScatterPlot.jsx';
 
 const Analytics = () => {
-  const { data: analyticsData, loading, error } = useAnalytics('daily-energy');
+  const { panelId } = useParams();
+  const { data: dashboardData, loading, error } = useDashboard(panelId);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="p-8 max-w-7xl mx-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center">
+            <p className="text-slate-500 dark:text-slate-400">Loading analytics...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="p-8 max-w-7xl mx-auto">
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-6">
+            <p className="text-red-700 dark:text-red-200">Error loading analytics: {error}</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const userPanelId = dashboardData?.meta?.userPanelId || panelId;
+  const totalPanels = dashboardData?.meta?.totalPanels;
+  const dailyEfficiency = dashboardData?.efficiency?.daily || [];
+  const panelPerformance = dashboardData?.analytics?.panelPerformance || [];
+  const weatherImpact = dashboardData?.analytics?.weatherImpact || [];
+  const totalEnergy = dashboardData?.analytics?.dailyEnergy?.reduce(
+    (sum, item) => sum + Number(item.energy || 0),
+    0,
+  ) || 0;
 
   return (
     <Layout>
-      <div className="p-8 max-w-7xl mx-auto">
-        {/* Page Header & Filter */}
-        <div className="flex justify-between items-end mb-8">
+      <div className="p-8 max-w-7xl mx-auto space-y-8">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Performance Analytics</h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Detailed energy production insights for the current cycle.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Range</label>
-            <div className="relative">
-              <select className="appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl pl-4 pr-10 py-2.5 text-sm font-semibold shadow-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 cursor-pointer">
-                <option>Last 30 Days</option>
-                <option>Current Quarter</option>
-                <option>Year to Date</option>
-                <option>Custom Range</option>
-              </select>
-              <Activity className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-            </div>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+              Detailed energy production and efficiency insights for Panel #{userPanelId}
+              {totalPanels ? ` of ${totalPanels}` : ''}
+            </p>
           </div>
         </div>
 
         {/* KPI Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Output */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Total Energy */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-xl transition-all hover:-translate-y-1 flex flex-col justify-between h-40 shadow-sm border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Total Output</span>
-              <span className="bg-yellow-500 text-slate-900 px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter">+12.4%</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Total Energy</span>
+              <span className="bg-green-500 text-white px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter">↑ Recent</span>
             </div>
             <div>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-slate-900 dark:text-slate-100">842.6</span>
-                <span className="text-lg font-bold text-slate-500 dark:text-slate-400">MWh</span>
+                <span className="text-4xl font-extrabold text-slate-900 dark:text-slate-100">{Number(totalEnergy).toFixed(2)}</span>
+                <span className="text-lg font-bold text-slate-500 dark:text-slate-400">kWh</span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic">Vs 749.2 MWh last period</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic">Period total</p>
             </div>
           </div>
 
@@ -54,61 +85,76 @@ const Analytics = () => {
             </div>
             <div>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-slate-900 dark:text-slate-100">94.8</span>
+                <span className="text-4xl font-extrabold text-slate-900 dark:text-slate-100">
+                  {Number(
+                    dailyEfficiency.reduce((sum, item) => sum + Number(item.efficiencyScore || 0), 0) /
+                      (dailyEfficiency.length || 1)
+                  ).toFixed(1)}
+                </span>
                 <span className="text-lg font-bold text-slate-500 dark:text-slate-400">%</span>
               </div>
-              <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div className="h-full bg-yellow-500 w-[94.8%]"></div>
-              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Average across period</p>
             </div>
           </div>
 
-          {/* Peak Generation */}
+          {/* Peak Day */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-xl transition-all hover:-translate-y-1 flex flex-col justify-between h-40 shadow-sm border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Peak Time</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Peak Day</span>
               <Sun className="text-yellow-500" size={20} />
             </div>
             <div>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-slate-900 dark:text-slate-100">13:42</span>
+                <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">
+                  {Math.max(
+                    ...dashboardData?.analytics?.dailyEnergy?.map((item) => Number(item.energy || 0)) || [0]
+                  ).toFixed(2)}
+                </span>
+                <span className="text-sm font-bold text-slate-500 dark:text-slate-400">kWh</span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Daily average peak window</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Highest daily output</p>
             </div>
           </div>
 
-          {/* Active Hardware */}
+          {/* Weather Impact Days */}
           <div className="bg-white dark:bg-slate-900 p-6 rounded-xl transition-all hover:-translate-y-1 flex flex-col justify-between h-40 shadow-sm border border-slate-200 dark:border-slate-800">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Uptime</span>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Best Weather Day</span>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                <span className="text-[10px] font-bold text-green-600">ONLINE</span>
+                <span className="text-[10px] font-bold text-green-600 dark:text-green-400">OPTIMAL</span>
               </div>
             </div>
             <div>
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-slate-900 dark:text-slate-100">99.9</span>
-                <span className="text-lg font-bold text-slate-500 dark:text-slate-400">%</span>
+                <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">
+                  {Math.min(
+                    ...dashboardData?.analytics?.weatherImpact?.map((item) => Number(item.cloud_cover || 100)) || [0]
+                  ).toFixed(0)}%
+                </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">2,140 Active Panel Clusters</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Lowest cloud cover</p>
             </div>
           </div>
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <p className="text-slate-500 dark:text-slate-400">Loading analytics data...</p>
-          </div>
-        )}
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Efficiency Bar Chart */}
+          <EfficiencyChart dailyEfficiency={dailyEfficiency} />
 
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-6 mb-8">
-            <p className="text-red-700 dark:text-red-200">Error loading analytics: {error}</p>
-          </div>
-        )}
+          {/* Efficiency Breakdown Stacked Chart */}
+          <EfficiencyBreakdownChart dailyEfficiency={dailyEfficiency} />
+        </div>
+
+        {/* Full Width Charts */}
+        <div className="space-y-8">
+          {/* Panel Performance Horizontal Bar Chart */}
+          <PanelPerformanceChart panelPerformance={panelPerformance} selectedPanelId={panelId} />
+
+          {/* Cloud Cover vs Energy Scatter Plot */}
+          <CloudCoverScatterPlot weatherImpact={weatherImpact} />
+        </div>
       </div>
     </Layout>
   );
