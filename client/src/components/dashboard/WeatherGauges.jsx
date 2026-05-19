@@ -76,24 +76,24 @@ const CircularGauge = ({ value, max = 100, label, unit, icon: Icon, color = 'blu
 };
 
 const WeatherGauges = ({ currentWeather }) => {
-  if (!currentWeather) {
-    return (
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
-        <p className="text-slate-500 dark:text-slate-400">No weather data available</p>
-      </div>
-    );
-  }
+  // Use fallback values if currentWeather is not available
+  const weather = currentWeather || {
+    temperature: 0,
+    humidity: 0,
+    cloud_cover: 0,
+    wind_speed: 0,
+  };
 
   return (
     <div>
       <div className="mb-4">
-        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Current Weather</h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Real-time weather conditions</p>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Weather Information</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Weather conditions for selected date</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <CircularGauge
-          value={currentWeather.temperature || 0}
+          value={weather.temperature || 0}
           max={50}
           label="Temperature"
           unit="°C"
@@ -101,7 +101,7 @@ const WeatherGauges = ({ currentWeather }) => {
           color="orange"
         />
         <CircularGauge
-          value={currentWeather.humidity || 0}
+          value={weather.humidity || 0}
           max={100}
           label="Humidity"
           unit="%"
@@ -109,7 +109,7 @@ const WeatherGauges = ({ currentWeather }) => {
           color="blue"
         />
         <CircularGauge
-          value={currentWeather.cloud_cover || 0}
+          value={weather.cloud_cover || 0}
           max={100}
           label="Cloud Cover"
           unit="%"
@@ -117,7 +117,7 @@ const WeatherGauges = ({ currentWeather }) => {
           color="purple"
         />
         <CircularGauge
-          value={currentWeather.wind_speed || 0}
+          value={weather.wind_speed || 0}
           max={30}
           label="Wind Speed"
           unit="m/s"

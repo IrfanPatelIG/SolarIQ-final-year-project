@@ -84,9 +84,11 @@ export const buildWeatherImpact = (forecasts, weather) => {
 
     return {
       date: item.forecast_date,
-      energy: item.predicted_energy_kwh,
-      temperature: w?.temperature || 0,
-      cloud_cover: w?.cloud_cover || 0,
+      energy: Number(item.predicted_energy_kwh) || 0,
+      temperature: Number(w?.temperature) || 0,
+      cloud_cover: Number(w?.cloud_cover) || 0,
+      humidity: Number(w?.humidity) || 0,
+      wind_speed: Number(w?.wind_speed) || 0,
       weather_recorded_at: w?.recorded_at || null,
     };
   });

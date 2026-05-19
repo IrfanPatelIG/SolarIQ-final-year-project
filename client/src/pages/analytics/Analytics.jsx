@@ -10,7 +10,57 @@ import CloudCoverScatterPlot from '../../components/analytics/CloudCoverScatterP
 
 const Analytics = () => {
   const { panelId } = useParams();
-  const { data: dashboardData, loading, error } = useDashboard(panelId);
+  const [startDate, setStartDate] = React.useState(null);
+  const [endDate, setEndDate] = React.useState(null);
+  const [selectedDate, setSelectedDate] = React.useState(null);
+  const [hasFetchedDates, setHasFetchedDates] = React.useState(false);
+
+  const { data: dashboardData, loading, error } = useDashboard(panelId, startDate, endDate);
+
+  // Initially fetch without dates to get available dates
+  React.useEffect(() => {
+    if (panelId && !hasFetchedDates) {
+      setHasFetchedDates(true);
+    }
+  }, [panelId, hasFetchedDates]);
+
+  // Set default date range when available dates are loaded
+  React.useEffect(() => {
+    if (
+      dashboardData?.meta?.availableDates &&
+      dashboardData.meta.availableDates.length > 0 &&
+      !startDate &&
+      !endDate
+    ) {
+      const availableDates = dashboardData.meta.availableDates;
+      const firstDate = availableDates[0];
+
+      // Set a 5-day range by default
+      setStartDate(firstDate);
+      const lastDate = availableDates[Math.min(4, availableDates.length - 1)];
+      setEndDate(lastDate);
+      setSelectedDate(new Date(firstDate));
+    }
+  }, [dashboardData?.meta?.availableDates, startDate, endDate]);
+
+  // Handle date dropdown change
+  const handleDateChange = (e) => {
+    const selected = new Date(e.target.value);
+    setSelectedDate(selected);
+    const formattedDate = selected.toISOString().split("T")[0];
+    
+    // Set a 5-day range starting from the selected date
+    setStartDate(formattedDate);
+    const availableDates = dashboardData?.meta?.availableDates || [];
+    const selectedIndex = availableDates.indexOf(formattedDate);
+    const endIndex = Math.min(selectedIndex + 4, availableDates.length - 1);
+    setEndDate(availableDates[endIndex]);
+  };
+
+  // Get available dates from database (all dates, not just current range)
+  const getAvailableDates = () => {
+    return dashboardData?.meta?.availableDates || [];
+  };
 
   if (loading) {
     return (
@@ -49,7 +99,7 @@ const Analytics = () => {
   return (
     <Layout>
       <div className="p-8 max-w-7xl mx-auto space-y-8">
-        {/* Page Header */}
+        {/* Page Header with Date Selector */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Performance Analytics</h2>
@@ -57,6 +107,30 @@ const Analytics = () => {
               Detailed energy production and efficiency insights for Panel #{userPanelId}
               {totalPanels ? ` of ${totalPanels}` : ''}
             </p>
+          </div>
+
+          {/* Date Dropdown */}
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5">
+            <label className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest">
+              Select Date:
+            </label>
+            <select
+              value={
+                selectedDate ? selectedDate.toISOString().split("T")[0] : ""
+              }
+              onChange={handleDateChange}
+              className="bg-transparent border-none text-slate-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer"
+            >
+              {getAvailableDates().map((date) => (
+                <option key={date} value={date}>
+                  {new Date(date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 

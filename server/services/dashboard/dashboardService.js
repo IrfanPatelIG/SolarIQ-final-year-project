@@ -1,6 +1,8 @@
 import { Op } from "sequelize";
+
 import Panel from "../../models/panelModel.js";
 import Forecast from "../../models/forecastModel.js";
+
 import AppError from "../../utils/appError.js";
 
 import {
@@ -30,98 +32,242 @@ export const getDashboardService = async ({
   endDate,
   userId,
 }) => {
-  // If no date range provided, fetch all data for the panel to get available dates
-  const { panel, location, forecasts, weather } = await getFullPanelData(
-    panelId,
-    startDate || '1970-01-01',
-    endDate || '2099-12-31',
-  );
+  // ===================================================
+  // Fetch Panel + Weather + Forecast Data
+  // ===================================================
+
+  // Fetch all forecasts and weather data (not filtered by date range)
+  // This ensures weather data is always available and dropdown shows all dates
+  const { panel, location, forecasts: allForecasts, weather: allWeather } =
+    await getFullPanelData(
+      panelId,
+      "1970-01-01",
+      "2099-12-31",
+    );
+
+  // ===================================================
+  // Validations
+  // ===================================================
 
   if (!panel || !location) {
-    throw new AppError("Panel not found", 404);
+    throw new AppError(
+      "Panel not found",
+      404,
+    );
   }
 
   if (panel.user_id !== userId) {
-    throw new AppError("Unauthorized panel access", 403);
+    throw new AppError(
+      "Unauthorized panel access",
+      403,
+    );
   }
 
-  const panelMeta = await getUserPanelMeta(userId, panelId);
+  // ===================================================
+  // Panel Meta
+  // ===================================================
 
-  // Get available dates for this panel from database
-  const availableDates = forecasts.map(f => f.forecast_date).sort();
+  const panelMeta =
+    await getUserPanelMeta(
+      userId,
+      panelId,
+    );
 
-  // If no date range provided, return only available dates
+  // ===================================================
+  // Available Dates (from ALL forecasts)
+  // ===================================================
+
+  const availableDates =
+    allForecasts
+      .map((f) =>
+        String(
+          f.forecast_date,
+        ).split("T")[0],
+      )
+      .sort();
+
+  // ===================================================
+  // Return only metadata if no dates selected
+  // ===================================================
+
   if (!startDate || !endDate) {
     return {
       meta: {
         ...panelMeta,
-        weatherAvailable: weather.length > 0,
+
+        weatherAvailable:
+          allWeather.length > 0,
+
         availableDates,
       },
     };
   }
 
-  // Filter forecasts and weather by the requested date range
-  const filteredForecasts = forecasts.filter(f => {
-    const date = new Date(f.forecast_date).toISOString().split('T')[0];
-    return date >= startDate && date <= endDate;
-  });
+  // ===================================================
+  // Filter Forecasts by date range
+  // ===================================================
 
-  const filteredWeather = weather.filter(w => {
-    const date = new Date(w.recorded_at).toISOString().split('T')[0];
-    return date >= startDate && date <= endDate;
-  });
+  const filteredForecasts =
+    allForecasts.filter((f) => {
+      const date =
+        String(
+          f.forecast_date,
+        ).split("T")[0];
 
-  const totalEnergy = calculateTotalEnergy(filteredForecasts);
+      return (
+        date >= startDate &&
+        date <= endDate
+      );
+    });
 
-  const avgWeather = filteredWeather.length > 0 ? safeWeatherAverage(filteredWeather) : {
-    temperature: 0,
-    cloud_cover: 0,
-    humidity: 0,
-    precipitation: 0,
-    wind_speed: 0,
-    air_pressure: 0,
-  };
+  // ===================================================
+  // Filter Weather by date range
+  // ===================================================
 
-  const forecast = buildForecast(filteredForecasts);
+  const filteredWeather =
+    allWeather.filter((w) => {
+      const date =
+        String(
+          w.recorded_at,
+        ).split("T")[0];
 
-  const heroCard = getSelectedDayEnergy(filteredForecasts, startDate);
+      return (
+        date >= startDate &&
+        date <= endDate
+      );
+    });
 
-  // Use database weather data for consistency (not external API)
-  let currentWeather = null;
-  if (filteredWeather.length > 0) {
-    // Get weather data for the start date (today's date)
-    const targetDate = new Date(startDate).toISOString().split('T')[0];
-    const exactWeather = filteredWeather.find(
-      (w) => new Date(w.recorded_at).toISOString().split('T')[0] === targetDate
+  // ===================================================
+  // Totals + Forecast
+  // ===================================================
+
+  const totalEnergy =
+    calculateTotalEnergy(
+      filteredForecasts,
     );
-    
+
+  const avgWeather =
+    allWeather.length > 0
+      ? safeWeatherAverage(
+          allWeather,
+        )
+      : {
+          temperature: 0,
+          cloud_cover: 0,
+          humidity: 0,
+          precipitation: 0,
+          wind_speed: 0,
+          air_pressure: 0,
+        };
+
+  const forecast =
+    buildForecast(
+      filteredForecasts,
+    );
+
+  const heroCard =
+    getSelectedDayEnergy(
+      filteredForecasts,
+      startDate,
+    );
+
+  // ===================================================
+  // Current Weather
+  // ===================================================
+
+  let currentWeather = null;
+
+  // Use allWeather to ensure weather data is always available
+  if (allWeather.length > 0) {
+    const targetDate =
+      String(startDate).split(
+        "T",
+      )[0];
+
+    const exactWeather =
+      allWeather.find(
+        (w) =>
+          String(
+            w.recorded_at,
+          ).split("T")[0] ===
+          targetDate,
+      );
+
     if (exactWeather) {
       currentWeather = {
-        temperature: exactWeather.temperature,
-        humidity: exactWeather.humidity,
-        cloud_cover: exactWeather.cloud_cover,
-        wind_speed: exactWeather.wind_speed,
-        air_pressure: exactWeather.air_pressure,
-        precipitation: exactWeather.precipitation,
+        temperature:
+          Number(exactWeather.temperature) || 0,
+
+        humidity:
+          Number(exactWeather.humidity) || 0,
+
+        cloud_cover:
+          Number(exactWeather.cloud_cover) || 0,
+
+        wind_speed:
+          Number(exactWeather.wind_speed) || 0,
+
+        air_pressure:
+          Number(exactWeather.air_pressure) || 0,
+
+        precipitation:
+          Number(exactWeather.precipitation) || 0,
+
+        solar_irradiance:
+          Number(exactWeather.solar_irradiance) || 0,
+
         description: "",
       };
     } else {
-      // Fallback to first available weather data
+      // Fallback to first available weather data if exact match not found
       currentWeather = {
-        temperature: filteredWeather[0].temperature,
-        humidity: filteredWeather[0].humidity,
-        cloud_cover: filteredWeather[0].cloud_cover,
-        wind_speed: filteredWeather[0].wind_speed,
-        air_pressure: filteredWeather[0].air_pressure,
-        precipitation: filteredWeather[0].precipitation,
+        temperature:
+          Number(allWeather[0]
+            .temperature) || 0,
+
+        humidity:
+          Number(allWeather[0]
+            .humidity) || 0,
+
+        cloud_cover:
+          Number(allWeather[0]
+            .cloud_cover) || 0,
+
+        wind_speed:
+          Number(allWeather[0]
+            .wind_speed) || 0,
+
+        air_pressure:
+          Number(allWeather[0]
+            .air_pressure) || 0,
+
+        precipitation:
+          Number(allWeather[0]
+            .precipitation) || 0,
+
+        solar_irradiance:
+          Number(allWeather[0]
+            .solar_irradiance) || 0,
+
         description: "",
       };
     }
   }
 
-  const [panelPerformance, efficiencyData, insightsData] = await Promise.all([
-    getPanelPerformance(userId, startDate, endDate),
+  // ===================================================
+  // Parallel Services
+  // ===================================================
+
+  const [
+    panelPerformance,
+    efficiencyData,
+    insightsData,
+  ] = await Promise.all([
+    getPanelPerformance(
+      userId,
+      startDate,
+      endDate,
+    ),
 
     calculateEfficiency({
       panelId,
@@ -137,60 +283,183 @@ export const getDashboardService = async ({
     }),
   ]);
 
+  // ===================================================
+  // Final Response
+  // ===================================================
+
   return {
     heroCard,
+
     forecast,
 
     analytics: {
+      // ===============================================
+      // Daily Energy
+      // ===============================================
+
       dailyEnergy: forecast,
-      weatherImpact: buildWeatherImpact(filteredForecasts, filteredWeather),
-      distribution: buildDistribution(filteredForecasts),
+
+      // ===============================================
+      // Weather Impact
+      // ===============================================
+
+      weatherImpact:
+        buildWeatherImpact(
+          filteredForecasts,
+          allWeather,
+        ),
+
+      // ===============================================
+      // Full Weather History
+      // ===============================================
+
+      weatherHistory:
+        filteredWeather.map(
+          (weather) => ({
+            weather_id:
+              weather.weather_id,
+
+            location_id:
+              weather.location_id,
+
+            date: String(
+              weather.recorded_at,
+            ).split("T")[0],
+
+            recorded_at:
+              weather.recorded_at,
+
+            temperature:
+              weather.temperature,
+
+            humidity:
+              weather.humidity,
+
+            solar_irradiance:
+              weather.solar_irradiance,
+
+            cloud_cover:
+              weather.cloud_cover,
+
+            wind_speed:
+              weather.wind_speed,
+
+            precipitation:
+              weather.precipitation,
+
+            air_pressure:
+              weather.air_pressure,
+          }),
+        ),
+
+      // ===============================================
+      // Distribution
+      // ===============================================
+
+      distribution:
+        buildDistribution(
+          filteredForecasts,
+        ),
+
+      // ===============================================
+      // Panel Performance
+      // ===============================================
+
       panelPerformance,
     },
 
-    efficiency: efficiencyData.efficiency,
+    // =================================================
+    // Efficiency
+    // =================================================
+
+    efficiency:
+      efficiencyData.efficiency,
+
+    // =================================================
+    // Current Weather
+    // =================================================
 
     currentWeather,
 
+    // =================================================
+    // Insights
+    // =================================================
+
     insights: {
       score: insightsData.score,
-      alerts: insightsData.alerts,
-      recommendations: insightsData.recommendations,
+
+      alerts:
+        insightsData.alerts,
+
+      recommendations:
+        insightsData.recommendations,
     },
+
+    // =================================================
+    // Database Data
+    // =================================================
 
     db: {
       panel: {
-        panel_id: panel.panel_id,
+        panel_id:
+          panel.panel_id,
+
         area: panel.area,
+
         tilt: panel.tilt,
-        orientation: panel.orientation,
-        installation_date: panel.installation_date,
+
+        orientation:
+          panel.orientation,
+
+        installation_date:
+          panel.installation_date,
       },
+
       location: {
-        location_id: location.location_id,
-        latitude: location.latitude,
-        longitude: location.longitude,
+        location_id:
+          location.location_id,
+
+        latitude:
+          location.latitude,
+
+        longitude:
+          location.longitude,
+
         city: location.city,
+
         state: location.state,
-        country: location.country,
+
+        country:
+          location.country,
       },
     },
 
+    // =================================================
+    // Metadata
+    // =================================================
+
     meta: {
       ...panelMeta,
-      weatherAvailable: weather.length > 0,
+
+      weatherAvailable:
+        allWeather.length > 0,
+
       availableDates,
     },
   };
 };
 
 // ===================================================
-// Helpers
+// Safe Weather Average
 // ===================================================
 
-const safeWeatherAverage = (weather) => {
+const safeWeatherAverage = (
+  weather,
+) => {
   try {
-    return calculateAvgWeather(weather);
+    return calculateAvgWeather(
+      weather,
+    );
   } catch {
     return {
       temperature: 0,
@@ -203,75 +472,158 @@ const safeWeatherAverage = (weather) => {
   }
 };
 
-const getUserPanelMeta = async (userId, panelId) => {
-  const panels = await Panel.findAll({
-    where: {
-      user_id: userId,
-    },
-    attributes: ["panel_id"],
-    order: [
-      ["createdAt", "ASC"],
-      ["panel_id", "ASC"],
-    ],
-  });
+// ===================================================
+// User Panel Metadata
+// ===================================================
 
-  const totalPanels = panels.length;
-  const index = panels.findIndex(
-    (panel) => Number(panel.panel_id) === Number(panelId),
-  );
+const getUserPanelMeta =
+  async (
+    userId,
+    panelId,
+  ) => {
+    const panels =
+      await Panel.findAll({
+        where: {
+          user_id: userId,
+        },
 
-  return {
-    panelId: Number(panelId),
-    userPanelId: index >= 0 ? index + 1 : Number(panelId),
-    totalPanels,
-  };
-};
+        attributes: [
+          "panel_id",
+        ],
 
-const getPanelPerformance = async (userId, startDate, endDate) => {
-  const panels = await Panel.findAll({
-    where: {
-      user_id: userId,
-    },
-    attributes: ["panel_id", "tilt", "orientation"],
-  });
+        order: [
+          ["createdAt", "ASC"],
+          ["panel_id", "ASC"],
+        ],
+      });
 
-  const panelIds = panels.map((panel) => panel.panel_id);
+    const totalPanels =
+      panels.length;
 
-  if (!panelIds.length) {
-    return [];
-  }
-
-  const forecasts = await Forecast.findAll({
-    where: {
-      panel_id: panelIds,
-      forecast_date: {
-        [Op.between]: [startDate, endDate],
-      },
-    },
-    attributes: ["panel_id", "predicted_energy_kwh"],
-  });
-
-  const energyMap = {};
-
-  forecasts.forEach((row) => {
-    if (!energyMap[row.panel_id]) {
-      energyMap[row.panel_id] = [];
-    }
-
-    energyMap[row.panel_id].push(Number(row.predicted_energy_kwh));
-  });
-
-  return panels.map((panel) => {
-    const energies = energyMap[panel.panel_id] || [];
-
-    const avg =
-      energies.reduce((sum, val) => sum + val, 0) / (energies.length || 1);
+    const index =
+      panels.findIndex(
+        (panel) =>
+          Number(
+            panel.panel_id,
+          ) === Number(panelId),
+      );
 
     return {
-      panel_id: panel.panel_id,
-      tilt: panel.tilt,
-      orientation: panel.orientation,
-      avg_energy: avg,
+      panelId:
+        Number(panelId),
+
+      userPanelId:
+        index >= 0
+          ? index + 1
+          : Number(panelId),
+
+      totalPanels,
     };
-  });
-};
+  };
+
+// ===================================================
+// Panel Performance
+// ===================================================
+
+const getPanelPerformance =
+  async (
+    userId,
+    startDate,
+    endDate,
+  ) => {
+    const panels =
+      await Panel.findAll({
+        where: {
+          user_id: userId,
+        },
+
+        attributes: [
+          "panel_id",
+          "tilt",
+          "orientation",
+        ],
+      });
+
+    const panelIds =
+      panels.map(
+        (panel) =>
+          panel.panel_id,
+      );
+
+    if (!panelIds.length) {
+      return [];
+    }
+
+    const forecasts =
+      await Forecast.findAll({
+        where: {
+          panel_id: panelIds,
+
+          forecast_date: {
+            [Op.between]: [
+              startDate,
+              endDate,
+            ],
+          },
+        },
+
+        attributes: [
+          "panel_id",
+          "predicted_energy_kwh",
+        ],
+      });
+
+    const energyMap = {};
+
+    forecasts.forEach(
+      (row) => {
+        if (
+          !energyMap[
+            row.panel_id
+          ]
+        ) {
+          energyMap[
+            row.panel_id
+          ] = [];
+        }
+
+        energyMap[
+          row.panel_id
+        ].push(
+          Number(
+            row.predicted_energy_kwh,
+          ),
+        );
+      },
+    );
+
+    return panels.map(
+      (panel) => {
+        const energies =
+          energyMap[
+            panel.panel_id
+          ] || [];
+
+        const avg =
+          energies.reduce(
+            (sum, val) =>
+              sum + val,
+            0,
+          ) /
+          (energies.length ||
+            1);
+
+        return {
+          panel_id:
+            panel.panel_id,
+
+          tilt: panel.tilt,
+
+          orientation:
+            panel.orientation,
+
+          avg_energy: avg,
+        };
+      },
+    );
+  };

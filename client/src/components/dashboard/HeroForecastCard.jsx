@@ -2,13 +2,21 @@ import React from 'react';
 import { Sun, Cloud, CloudRain, CloudSnow, Wind } from 'lucide-react';
 
 const HeroForecastCard = ({ heroCard, currentWeather, panelInfo }) => {
-  if (!heroCard || !currentWeather) {
+  if (!heroCard) {
     return (
       <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
         <p className="text-slate-500 dark:text-slate-400">Loading forecast data...</p>
       </div>
     );
   }
+
+  // Use currentWeather if available, otherwise use fallback values
+  const weather = currentWeather || {
+    cloud_cover: 0,
+    temperature: 0,
+    humidity: 0,
+    description: 'No weather data',
+  };
 
   const getWeatherIcon = (cloudCover) => {
     if (cloudCover > 80) return <CloudRain size={48} className="text-slate-500" />;
@@ -44,9 +52,9 @@ const HeroForecastCard = ({ heroCard, currentWeather, panelInfo }) => {
 
         {/* Center: Weather Icon */}
         <div className="flex flex-col items-center justify-center">
-          {getWeatherIcon(currentWeather.cloud_cover)}
+          {getWeatherIcon(weather.cloud_cover)}
           <p className="text-blue-100 mt-3 text-sm font-medium capitalize">
-            {currentWeather.description || `${Math.round(currentWeather.cloud_cover)}% Cloudy`}
+            {weather.description || `${Math.round(weather.cloud_cover)}% Cloudy`}
           </p>
         </div>
 
@@ -54,15 +62,15 @@ const HeroForecastCard = ({ heroCard, currentWeather, panelInfo }) => {
         <div className="space-y-3">
           <div className="bg-blue-500/20 rounded-lg p-3 backdrop-blur-sm">
             <p className="text-blue-100 text-xs font-semibold opacity-75">Temperature</p>
-            <p className="text-2xl font-bold">{Math.round(currentWeather.temperature)}°C</p>
+            <p className="text-2xl font-bold">{Math.round(weather.temperature)}°C</p>
           </div>
           <div className="bg-blue-500/20 rounded-lg p-3 backdrop-blur-sm">
             <p className="text-blue-100 text-xs font-semibold opacity-75">Humidity</p>
-            <p className="text-2xl font-bold">{Math.round(currentWeather.humidity)}%</p>
+            <p className="text-2xl font-bold">{Math.round(weather.humidity)}%</p>
           </div>
           <div className="bg-blue-500/20 rounded-lg p-3 backdrop-blur-sm">
             <p className="text-blue-100 text-xs font-semibold opacity-75">Cloud Cover</p>
-            <p className="text-2xl font-bold">{Math.round(currentWeather.cloud_cover)}%</p>
+            <p className="text-2xl font-bold">{Math.round(weather.cloud_cover)}%</p>
           </div>
         </div>
       </div>

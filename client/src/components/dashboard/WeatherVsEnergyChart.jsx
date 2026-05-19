@@ -21,9 +21,9 @@ const WeatherVsEnergyChart = ({ weatherImpact }) => {
 
   const chartData = weatherImpact.map((item) => ({
     date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    energy: Number(item.energy).toFixed(2),
-    temperature: Number(item.temperature).toFixed(1),
-    cloudCover: Number(item.cloud_cover).toFixed(1),
+    energy: Number(item.energy || item.predicted_energy_kwh || 0).toFixed(2),
+    temperature: Number(item.temperature || 0).toFixed(1),
+    cloudCover: Number(item.cloud_cover || 0).toFixed(1),
   }));
 
   return (
