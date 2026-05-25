@@ -24,10 +24,10 @@ const Settings = () => {
 
   return (
     <Layout>
-      <div className="p-8 max-w-6xl mx-auto">
-        <div className="mb-12">
-          <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mb-2">Account Settings</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">Manage your solar observatory preferences and security.</p>
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 mb-2">Account Settings</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Manage your solar observatory preferences and security.</p>
         </div>
 
         {/* Bento Grid Layout */}

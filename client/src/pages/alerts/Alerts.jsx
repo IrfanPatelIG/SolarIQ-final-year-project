@@ -41,11 +41,11 @@ const Alerts = () => {
 
   return (
     <Layout>
-      <div className="p-8 max-w-6xl mx-auto space-y-12">
+      <div className="p-8 max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="space-y-2">
-          <h2 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">System Alerts & Insights</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-lg">
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">System Alerts & Insights</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">
             Real-time monitoring and actionable recommendations for Panel #{userPanelId}
             {totalPanels ? ` of ${totalPanels}` : ''}
           </p>
@@ -58,7 +58,7 @@ const Alerts = () => {
               <AlertTriangle className="text-red-600 dark:text-red-400" size={24} />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">System Alerts</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">System Alerts</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {alerts.length} {alerts.length === 1 ? 'alert' : 'alerts'} detected
               </p>
@@ -91,7 +91,7 @@ const Alerts = () => {
               <Lightbulb className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Recommendations</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Recommendations</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {recommendations.length} {recommendations.length === 1 ? 'recommendation' : 'recommendations'} for optimization
               </p>

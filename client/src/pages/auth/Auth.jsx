@@ -53,7 +53,10 @@ const Auth = () => {
         setConfirmPassword('');
       }
     } catch (err) {
-      setError(err.message || 'An error occurred. Please try again.');
+      setError(
+        err?.message ||
+        (typeof err === 'string' ? err : 'An error occurred. Please try again.')
+      );
     } finally {
       setLoading(false);
     }

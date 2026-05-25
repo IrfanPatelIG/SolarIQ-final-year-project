@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Search, Bell, HelpCircle, ChevronDown, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import UserAvatar from '../common/UserAvatar.jsx';
 import BrandLogo from '../common/BrandLogo.jsx';
 
 const TopNavbar = () => {
-  const location = useLocation();
   const { user, logout } = useAuth();
   const displayName = user?.name || user?.fullName || 'User';
   const displayEmail = user?.email || '';
@@ -36,69 +35,22 @@ const TopNavbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  const isActive = (path) => (
-    path === '/dashboard'
-      ? location.pathname.startsWith('/dashboard')
-      : location.pathname === path
-  );
-
   return (
-    <header className="w-full h-16 bg-white dark:bg-slate-900 flex justify-between items-center px-8 sticky top-0 z-40 shadow-sm">
-      <div className="flex items-center gap-8">
+    <header className="w-full h-16 bg-white dark:bg-slate-900 flex items-center gap-6 px-8 sticky top-0 z-40 shadow-sm">
+      <div className="flex items-center shrink-0">
         <BrandLogo className="md:hidden" />
-        <div className="hidden md:flex items-center gap-6 font-bold tracking-tight">
-          <Link 
-            to="/dashboard"
-            className={`pb-1 border-b-2 transition-colors ${
-              isActive('/dashboard') 
-                ? 'text-blue-900 dark:text-blue-100 border-yellow-500' 
-                : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-blue-700 dark:hover:text-blue-200 hover:border-blue-300'
-            }`}
-          >
-            Dashboard
-          </Link>
-          <Link 
-            to="/analytics"
-            className={`pb-1 border-b-2 transition-colors ${
-              isActive('/analytics') 
-                ? 'text-blue-900 dark:text-blue-100 border-yellow-500' 
-                : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-blue-700 dark:hover:text-blue-200 hover:border-blue-300'
-            }`}
-          >
-            Analytics
-          </Link>
-          <Link 
-            to="/alerts"
-            className={`pb-1 border-b-2 transition-colors ${
-              isActive('/alerts') 
-                ? 'text-blue-900 dark:text-blue-100 border-yellow-500' 
-                : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-red-600 dark:hover:text-red-300 hover:border-red-300'
-            }`}
-          >
-            Alerts
-          </Link>
-          <Link 
-            to="/settings"
-            className={`pb-1 border-b-2 transition-colors ${
-              isActive('/settings') 
-                ? 'text-blue-900 dark:text-blue-100 border-yellow-500' 
-                : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-blue-700 dark:hover:text-blue-200 hover:border-blue-300'
-            }`}
-          >
-            Settings
-          </Link>
-        </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="relative hidden sm:block">
+      <div className="flex-1 flex justify-center min-w-0">
+        <div className="relative hidden sm:block w-full max-w-3xl">
           <input 
-            className="bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-1.5 text-sm w-64 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" 
-            placeholder="Search systems..." 
+            className="bg-slate-100 dark:bg-slate-800 border-none rounded-full pl-5 pr-11 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" 
+            placeholder="Search panels, locations, alerts..." 
             type="text"
           />
-          <Search className="absolute right-3 top-1.5 text-slate-400 dark:text-slate-500" size={18} />
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
         </div>
-        
+      </div>
+      <div className="flex items-center gap-4 shrink-0">
         {/* Notifications */}
         <div className="relative" ref={notificationsRef}>
           <button 
@@ -124,7 +76,7 @@ const TopNavbar = () => {
                 </div>
               </div>
               <div className="p-3 border-t border-slate-200 dark:border-slate-700">
-                <Link to="/alerts" className="block text-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg py-2 transition-all">
+                <Link to="/dashboard?tab=alerts" className="block text-center text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg py-2 transition-all">
                   View All Alerts
                 </Link>
               </div>
