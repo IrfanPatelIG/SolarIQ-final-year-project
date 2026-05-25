@@ -1,0 +1,36 @@
+{
+  "mean": {
+    "sin_doy": 0.0049376856880354,
+    "cos_doy": 0.00934210208557992,
+    "solar_irradiance": 387.0409980886448,
+    "temperature_avg": 23.682764943549998,
+    "humidity": 51.848177515114,
+    "wind_speed": 12.50850921799715,
+    "pressure": 1001.0215612560002,
+    "cloud_cover": 62.55821386590431,
+    "precipitation": 49.95314962915914,
+    "solar_zenith_angle": 44.928905156730636,
+    "clear_sky_index": 0.5915798631612956,
+    "air_mass": 6.467815934474,
+    "capacity_kw": 25.47860297243,
+    "tilt_angle": 28.20829161301854,
+    "orientation": 180.00478064446003
+  },
+  "std": {
+    "sin_doy": 0.7065389507651642,
+    "cos_doy": 0.7062623762031627,
+    "solar_irradiance": 295.65257330770277,
+    "temperature_avg": 11.743085310143009,
+    "humidity": 26.373930900575974,
+    "wind_speed": 7.22410369893795,
+    "pressure": 24.462840896095795,
+    "cloud_cover": 15.92279928643503,
+    "precipitation": 28.936204567256734,
+    "solar_zenith_angle": 26.144416067832694,
+    "clear_sky_index": 0.3326394604472869,
+    "air_mass": 3.1720013779758864,
+    "capacity_kw": 14.09904555183179,
+    "tilt_angle": 14.764776806110463,
+    "orientation": 52.985883960411435
+  }
+}
