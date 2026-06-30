@@ -104,38 +104,64 @@ export const getDashboardService = async ({
   }
 
   // ===================================================
-  // Filter Forecasts by date range
+  // Resolve effective date range
   // ===================================================
+
+  const formatDateOnly = (value) =>
+    String(value).split("T")[0];
+
+  const availableForecastDates = allForecasts
+    .map((f) => formatDateOnly(f.forecast_date))
+    .sort();
+
+  const availableWeatherDates = allWeather
+    .map((w) => formatDateOnly(w.recorded_at))
+    .sort();
+
+  const fallbackStartDate = panel.installation_date
+    ? formatDateOnly(panel.installation_date)
+    : availableForecastDates[0] || availableWeatherDates[0] || startDate;
+
+  const fallbackEndDate = availableForecastDates.at(-1) ||
+    availableWeatherDates.at(-1) ||
+    endDate;
 
   const filteredForecasts =
     allForecasts.filter((f) => {
-      const date =
-        String(
-          f.forecast_date,
-        ).split("T")[0];
+      const date = formatDateOnly(f.forecast_date);
 
-      return (
-        date >= startDate &&
-        date <= endDate
-      );
+      return date >= startDate && date <= endDate;
     });
-
-  // ===================================================
-  // Filter Weather by date range
-  // ===================================================
 
   const filteredWeather =
     allWeather.filter((w) => {
-      const date =
-        String(
-          w.recorded_at,
-        ).split("T")[0];
+      const date = formatDateOnly(w.recorded_at);
 
-      return (
-        date >= startDate &&
-        date <= endDate
-      );
+      return date >= startDate && date <= endDate;
     });
+
+  const hasRequestedRangeData =
+    filteredForecasts.length > 0 || filteredWeather.length > 0;
+
+  const effectiveStartDate = hasRequestedRangeData
+    ? startDate
+    : fallbackStartDate;
+
+  const effectiveEndDate = hasRequestedRangeData
+    ? endDate
+    : fallbackEndDate;
+
+  const effectiveForecasts = allForecasts.filter((f) => {
+    const date = formatDateOnly(f.forecast_date);
+
+    return date >= effectiveStartDate && date <= effectiveEndDate;
+  });
+
+  const effectiveWeather = allWeather.filter((w) => {
+    const date = formatDateOnly(w.recorded_at);
+
+    return date >= effectiveStartDate && date <= effectiveEndDate;
+  });
 
   // ===================================================
   // Totals + Forecast
@@ -143,7 +169,7 @@ export const getDashboardService = async ({
 
   const totalEnergy =
     calculateTotalEnergy(
-      filteredForecasts,
+      effectiveForecasts,
     );
 
   const avgWeather =
@@ -162,13 +188,13 @@ export const getDashboardService = async ({
 
   const forecast =
     buildForecast(
-      filteredForecasts,
+      effectiveForecasts,
     );
 
   const heroCard =
     getSelectedDayEnergy(
-      filteredForecasts,
-      startDate,
+      effectiveForecasts,
+      effectiveStartDate,
     );
 
   // ===================================================
@@ -177,15 +203,15 @@ export const getDashboardService = async ({
 
   let currentWeather = null;
 
-  // Use allWeather to ensure weather data is always available
-  if (allWeather.length > 0) {
+  // Use available weather data for the effective date range
+  if (effectiveWeather.length > 0) {
     const targetDate =
-      String(startDate).split(
+      String(effectiveStartDate).split(
         "T",
       )[0];
 
     const exactWeather =
-      allWeather.find(
+      effectiveWeather.find(
         (w) =>
           String(
             w.recorded_at,
@@ -219,34 +245,33 @@ export const getDashboardService = async ({
         description: "",
       };
     } else {
-      // Fallback to first available weather data if exact match not found
       currentWeather = {
         temperature:
-          Number(allWeather[0]
+          Number(effectiveWeather[0]
             .temperature) || 0,
 
         humidity:
-          Number(allWeather[0]
+          Number(effectiveWeather[0]
             .humidity) || 0,
 
         cloud_cover:
-          Number(allWeather[0]
+          Number(effectiveWeather[0]
             .cloud_cover) || 0,
 
         wind_speed:
-          Number(allWeather[0]
+          Number(effectiveWeather[0]
             .wind_speed) || 0,
 
         air_pressure:
-          Number(allWeather[0]
+          Number(effectiveWeather[0]
             .air_pressure) || 0,
 
         precipitation:
-          Number(allWeather[0]
+          Number(effectiveWeather[0]
             .precipitation) || 0,
 
         solar_irradiance:
-          Number(allWeather[0]
+          Number(effectiveWeather[0]
             .solar_irradiance) || 0,
 
         description: "",
@@ -265,21 +290,21 @@ export const getDashboardService = async ({
   ] = await Promise.all([
     getPanelPerformance(
       userId,
-      startDate,
-      endDate,
+      effectiveStartDate,
+      effectiveEndDate,
     ),
 
     calculateEfficiency({
       panelId,
-      startDate,
-      endDate,
+      startDate: effectiveStartDate,
+      endDate: effectiveEndDate,
     }),
 
     getFullInsightsService({
       userId,
       panelId,
-      startDate,
-      endDate,
+      startDate: effectiveStartDate,
+      endDate: effectiveEndDate,
     }),
   ]);
 
@@ -305,8 +330,8 @@ export const getDashboardService = async ({
 
       weatherImpact:
         buildWeatherImpact(
-          filteredForecasts,
-          allWeather,
+          effectiveForecasts,
+          effectiveWeather,
         ),
 
       // ===============================================
@@ -314,7 +339,7 @@ export const getDashboardService = async ({
       // ===============================================
 
       weatherHistory:
-        filteredWeather.map(
+        effectiveWeather.map(
           (weather) => ({
             weather_id:
               weather.weather_id,
@@ -358,7 +383,7 @@ export const getDashboardService = async ({
 
       distribution:
         buildDistribution(
-          filteredForecasts,
+          effectiveForecasts,
         ),
 
       // ===============================================

@@ -59,15 +59,15 @@ const HeroSection = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="text-4xl font-extrabold text-blue-600 mb-2">95%</div>
+              <div className="text-4xl font-extrabold text-blue-600 mb-2">90%</div>
               <div className="text-sm text-slate-500">Prediction Accuracy</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-extrabold text-cyan-600 mb-2">10K+</div>
+              <div className="text-4xl font-extrabold text-cyan-600 mb-2">1K+</div>
               <div className="text-sm text-slate-500">Active Users</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-extrabold text-blue-600 mb-2">50M+</div>
+              <div className="text-4xl font-extrabold text-blue-600 mb-2">50K+</div>
               <div className="text-sm text-slate-500">kWh Tracked</div>
             </div>
             <div className="text-center">

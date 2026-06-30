@@ -1,0 +1,10 @@
+# Logs
+
+.env
+node_modules
+
+
+# docs
+# Readme.md
+# package.json
+# package-lock.json
