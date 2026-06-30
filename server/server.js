@@ -11,6 +11,7 @@ import solarRoutes from "./routes/solarRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import insightRoutes from "./routes/insightRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 import { notFound } from "./middleware/notFoundMiddleware.js";
 import { errorHandler } from "./middleware/errorMiddleware.js";
@@ -41,6 +42,7 @@ app.use("/api/insights", insightRoutes);
 
 // ✅ Dashboard (MAIN API)
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/contact", contactRoutes);
 
 // Health check
 app.get("/", (req, res) => {

@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "list": "^2.0.19",
     "mysql2": "^3.21.1",
+    "nodemailer": "^9.0.1",
     "nodemon": "^3.1.14",
     "sequelize": "^6.37.8"
   }

@@ -10,6 +10,7 @@ import Analytics from './pages/analytics/Analytics.jsx';
 import Alerts from './pages/alerts/Alerts.jsx';
 import Settings from './pages/settings/Settings.jsx';
 import Admin from './pages/admin/Admin.jsx';
+import Contact from './pages/contact/Contact.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ element, requiredRole = null }) => {
@@ -53,6 +54,7 @@ const App = () => {
           <Route path="/alerts/:panelId" element={<ProtectedRoute element={<Alerts />} />} />
           <Route path="/settings" element={<ProtectedRoute element={<Settings />} />} />
           <Route path="/admin" element={<ProtectedRoute element={<Admin />} requiredRole="admin" />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/" />} />

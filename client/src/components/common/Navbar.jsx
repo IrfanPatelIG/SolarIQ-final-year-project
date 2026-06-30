@@ -22,6 +22,9 @@ const Navbar = () => {
         <li>
           <Link to={setupLink} className="text-slate-600 hover:text-blue-600 transition font-medium">{setupLabel}</Link>
         </li>
+        <li>
+          <Link to="/contact" className="text-slate-600 hover:text-blue-600 transition font-medium">Contact</Link>
+        </li>
         {isAuthenticated && (
           <>
             <li>
@@ -60,6 +63,9 @@ const Navbar = () => {
           </Link>
           <Link to={setupLink} className="text-slate-600 hover:text-blue-600 transition font-medium" onClick={() => setIsOpen(false)}>
             {setupLabel}
+          </Link>
+          <Link to="/contact" className="text-slate-600 hover:text-blue-600 transition font-medium" onClick={() => setIsOpen(false)}>
+            Contact
           </Link>
           {isAuthenticated && (
             <>

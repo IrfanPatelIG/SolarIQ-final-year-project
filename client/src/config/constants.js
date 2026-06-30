@@ -37,4 +37,8 @@ export const API_ENDPOINTS = {
   INSIGHTS: {
     GET_INSIGHTS: '/api/insights',
   },
+  // Contact
+  CONTACT: {
+    SUBMIT: '/api/contact/submit',
+  },
 };
