@@ -77,79 +77,99 @@ export const getDashboardService = async ({
   // Available Dates (from ALL forecasts)
   // ===================================================
 
-  const availableDates =
-    allForecasts
-      .map((f) =>
-        String(
-          f.forecast_date,
-        ).split("T")[0],
-      )
-      .sort();
-
-  // ===================================================
-  // Return only metadata if no dates selected
-  // ===================================================
-
-  if (!startDate || !endDate) {
-    return {
-      meta: {
-        ...panelMeta,
-
-        weatherAvailable:
-          allWeather.length > 0,
-
-        availableDates,
-      },
-    };
-  }
+  const availableDates = [
+    ...new Set(
+      allForecasts.map((f) =>
+        String(f.forecast_date).split("T")[0],
+      ),
+    ),
+  ].sort();
 
   // ===================================================
   // Resolve effective date range
   // ===================================================
 
-  const formatDateOnly = (value) =>
-    String(value).split("T")[0];
+  const formatDateOnly = (value) => {
+    if (!value) return null;
 
-  const availableForecastDates = allForecasts
-    .map((f) => formatDateOnly(f.forecast_date))
-    .sort();
+    if (value instanceof Date) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
 
-  const availableWeatherDates = allWeather
-    .map((w) => formatDateOnly(w.recorded_at))
-    .sort();
+      return `${year}-${month}-${day}`;
+    }
 
-  const fallbackStartDate = panel.installation_date
-    ? formatDateOnly(panel.installation_date)
-    : availableForecastDates[0] || availableWeatherDates[0] || startDate;
+    return String(value).split("T")[0];
+  };
 
-  const fallbackEndDate = availableForecastDates.at(-1) ||
+  const availableForecastDates = [
+    ...new Set(allForecasts.map((f) => formatDateOnly(f.forecast_date))),
+  ].sort();
+
+  const availableWeatherDates = [
+    ...new Set(allWeather.map((w) => formatDateOnly(w.recorded_at))),
+  ].sort();
+
+  const hasStoredHistory =
+    availableForecastDates.length > 0 || availableWeatherDates.length > 0;
+
+  const today = new Date();
+  const newPanelStartDate = new Date(today);
+  const newPanelEndDate = new Date(today);
+  newPanelEndDate.setDate(newPanelEndDate.getDate() + 5);
+
+  const historyStartDate =
+    availableForecastDates[0] ||
+    availableWeatherDates[0] ||
+    (panel.installation_date
+      ? formatDateOnly(panel.installation_date)
+      : startDate);
+
+  const historyEndDate =
+    availableForecastDates.at(-1) ||
     availableWeatherDates.at(-1) ||
-    endDate;
+    (panel.installation_date
+      ? formatDateOnly(panel.installation_date)
+      : endDate);
 
-  const filteredForecasts =
-    allForecasts.filter((f) => {
-      const date = formatDateOnly(f.forecast_date);
+  const hasRequestedRange = Boolean(startDate && endDate);
+  const requestedStartDate = hasRequestedRange
+    ? formatDateOnly(startDate)
+    : null;
+  const requestedEndDate = hasRequestedRange
+    ? formatDateOnly(endDate)
+    : null;
+  const requestedForecasts = hasRequestedRange
+    ? allForecasts.filter((f) => {
+        const date = formatDateOnly(f.forecast_date);
 
-      return date >= startDate && date <= endDate;
-    });
+        return date >= requestedStartDate && date <= requestedEndDate;
+      })
+    : [];
+  const requestedWeather = hasRequestedRange
+    ? allWeather.filter((w) => {
+        const date = formatDateOnly(w.recorded_at);
 
-  const filteredWeather =
-    allWeather.filter((w) => {
-      const date = formatDateOnly(w.recorded_at);
-
-      return date >= startDate && date <= endDate;
-    });
-
+        return date >= requestedStartDate && date <= requestedEndDate;
+      })
+    : [];
   const hasRequestedRangeData =
-    filteredForecasts.length > 0 || filteredWeather.length > 0;
+    requestedForecasts.length > 0 || requestedWeather.length > 0;
 
-  const effectiveStartDate = hasRequestedRangeData
-    ? startDate
-    : fallbackStartDate;
+  const effectiveStartDate =
+    hasRequestedRange && hasRequestedRangeData
+      ? requestedStartDate
+      : hasStoredHistory
+        ? historyStartDate
+        : formatDateOnly(newPanelStartDate);
 
-  const effectiveEndDate = hasRequestedRangeData
-    ? endDate
-    : fallbackEndDate;
+  const effectiveEndDate =
+    hasRequestedRange && hasRequestedRangeData
+      ? requestedEndDate
+      : hasStoredHistory
+        ? historyEndDate
+        : formatDateOnly(newPanelEndDate);
 
   const effectiveForecasts = allForecasts.filter((f) => {
     const date = formatDateOnly(f.forecast_date);
@@ -173,9 +193,9 @@ export const getDashboardService = async ({
     );
 
   const avgWeather =
-    allWeather.length > 0
+    effectiveWeather.length > 0
       ? safeWeatherAverage(
-          allWeather,
+          effectiveWeather,
         )
       : {
           temperature: 0,
@@ -213,9 +233,7 @@ export const getDashboardService = async ({
     const exactWeather =
       effectiveWeather.find(
         (w) =>
-          String(
-            w.recorded_at,
-          ).split("T")[0] ===
+          formatDateOnly(w.recorded_at) ===
           targetDate,
       );
 
@@ -347,9 +365,9 @@ export const getDashboardService = async ({
             location_id:
               weather.location_id,
 
-            date: String(
+            date: formatDateOnly(
               weather.recorded_at,
-            ).split("T")[0],
+            ),
 
             recorded_at:
               weather.recorded_at,
@@ -470,6 +488,16 @@ export const getDashboardService = async ({
         allWeather.length > 0,
 
       availableDates,
+
+      dateRange: {
+        startDate: effectiveStartDate,
+        endDate: effectiveEndDate,
+        source: hasRequestedRange && hasRequestedRangeData
+          ? "requested"
+          : hasStoredHistory
+            ? "stored-history"
+            : "forward-looking",
+      },
     },
   };
 };

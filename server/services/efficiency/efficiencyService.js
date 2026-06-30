@@ -37,8 +37,24 @@ export const calculateEfficiency = async ({
     }
 
     if (!forecasts.length) {
-      console.error("No forecast data for this range");
-      throw new Error("No forecast data for this range");
+      console.warn("No forecast data for this range; returning empty efficiency payload");
+      return {
+        panel_id: Number(panelId),
+        totalEnergy: 0,
+        avgEnergy: 0,
+        efficiency: {
+          overall: {
+            efficiencyScore: 0,
+            performance: "Poor",
+            breakdown: {
+              energyScore: 0,
+              weatherScore: 0,
+              panelScore: 0,
+            },
+          },
+          daily: [],
+        },
+      };
     }
 
   // Panel constants
@@ -111,12 +127,26 @@ export const calculateEfficiency = async ({
   }
 
   if (!daily.length) {
-    console.error(
-      "No weather-matched daily efficiency data found"
+    console.warn(
+      "No weather-matched daily efficiency data found; returning empty daily efficiency"
     );
-    throw new Error(
-      "No weather-matched daily efficiency data found"
-    );
+    return {
+      panel_id: Number(panelId),
+      totalEnergy: Number(calculateTotalEnergy(forecasts).toFixed(2)),
+      avgEnergy: Number((calculateTotalEnergy(forecasts) / forecasts.length).toFixed(2)),
+      efficiency: {
+        overall: {
+          efficiencyScore: 0,
+          performance: "Poor",
+          breakdown: {
+            energyScore: 0,
+            weatherScore: 0,
+            panelScore: round(panelScore),
+          },
+        },
+        daily: [],
+      },
+    };
   }
 
   // ---------- Overall ----------

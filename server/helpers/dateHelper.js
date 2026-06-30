@@ -28,17 +28,16 @@ export const isValidDateRangeWithin5Days = (startDate, endDate) => {
   end.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
 
-  // Calculate difference in days
-  const diffTime = end - start;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end
-
-  // Check if range is within 5 days
-  if (diffDays > 5) {
+  if (start < today) {
     return false;
   }
 
-  // Check if the range includes today or is in the past
-  if (end < today) {
+  // Calculate difference in days
+  const diffTime = end - start;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  // Check if end date is within 5 days of the start date
+  if (diffDays > 5) {
     return false;
   }
 

@@ -1,17 +1,28 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BarChart3, AlertTriangle, Settings as SettingsIcon, Shield, Plus, HelpCircle, LogOut, HeadphonesIcon } from 'lucide-react';
+import { LayoutDashboard, BarChart3, AlertTriangle, Settings as SettingsIcon, Shield, LogOut, HeadphonesIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import BrandLogo from '../common/BrandLogo.jsx';
+
+const getSelectedPanelId = (pathname) => {
+  const [, section, panelId] = pathname.split('/');
+
+  return ['dashboard', 'analytics', 'alerts'].includes(section) && panelId
+    ? panelId
+    : null;
+};
 
 const Sidebar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const selectedPanelId = getSelectedPanelId(location.pathname);
+  const analyticsPath = selectedPanelId ? `/analytics/${selectedPanelId}` : '/analytics';
+  const alertsPath = selectedPanelId ? `/alerts/${selectedPanelId}` : '/alerts';
   
   const isActive = (path) => (
-    path === '/dashboard'
-      ? location.pathname.startsWith('/dashboard')
+    ['/dashboard', '/analytics', '/alerts'].includes(path)
+      ? location.pathname.startsWith(path)
       : location.pathname === path
   );
 
@@ -32,7 +43,7 @@ const Sidebar = () => {
           <span className="text-sm">Dashboard</span>
         </Link>
         <Link 
-          to="/analytics"
+          to={analyticsPath}
           className={`flex items-center px-6 py-3 font-medium transition-all ${
             isActive('/analytics') 
               ? 'text-blue-900 dark:text-blue-100 border-r-4 border-yellow-500 bg-slate-100 dark:bg-slate-800' 
@@ -43,7 +54,7 @@ const Sidebar = () => {
           <span className="text-sm">Analytics</span>
         </Link>
         <Link 
-          to="/alerts"
+          to={alertsPath}
           className={`flex items-center px-6 py-3 font-medium transition-all ${
             isActive('/alerts') 
               ? 'text-blue-900 dark:text-blue-100 border-r-4 border-yellow-500 bg-slate-100 dark:bg-slate-800' 

@@ -129,7 +129,7 @@ const Onboarding = () => {
   const [startDate, setStartDate] = useState(todayISO);
   const [endDate, setEndDate] = useState(() => {
     const d = new Date(todayISO);
-    d.setDate(d.getDate() + 6);
+    d.setDate(d.getDate() + 5);
     return d.toISOString().slice(0, 10);
   });
 

@@ -46,7 +46,7 @@ export const validateSolarRequest = (body) => {
   }
 
   if (!isValidDateRangeWithin5Days(startDate, endDate)) {
-    return "Date range must be within 5 days including today";
+    return "Date range must start today or later and end within 5 days of the start date";
   }
 
   return null;

@@ -252,53 +252,45 @@ const Dashboard = () => {
   const [startDate, setStartDate] = React.useState(null);
   const [endDate, setEndDate] = React.useState(null);
   const [selectedDate, setSelectedDate] = React.useState(null);
-  const [hasFetchedDates, setHasFetchedDates] = React.useState(false);
+  const [dateFilterPanelId, setDateFilterPanelId] = React.useState(null);
   const [activeTab, setActiveTab] = React.useState('dashboard');
+  const effectiveStartDate = dateFilterPanelId === panelId ? startDate : null;
+  const effectiveEndDate = dateFilterPanelId === panelId ? endDate : null;
 
   const {
     data: dashboardData,
     loading,
     error,
-  } = useDashboard(panelId, startDate, endDate);
+  } = useDashboard(panelId, effectiveStartDate, effectiveEndDate);
 
-  // Initially fetch without dates to get available dates
   React.useEffect(() => {
-    if (panelId && !hasFetchedDates) {
-      setHasFetchedDates(true);
-    }
-  }, [panelId, hasFetchedDates]);
-
-  // Set default date range when available dates are loaded
-  React.useEffect(() => {
-    if (
-      dashboardData?.meta?.availableDates &&
-      dashboardData.meta.availableDates.length > 0 &&
-      !startDate &&
-      !endDate
-    ) {
-      const availableDates = dashboardData.meta.availableDates;
-      const firstDate = availableDates[0];
-
-      // Set a 5-day range by default
-      setStartDate(firstDate);
-      const lastDate = availableDates[Math.min(4, availableDates.length - 1)];
-      setEndDate(lastDate);
-      setSelectedDate(new Date(firstDate));
-    }
-  }, [dashboardData?.meta?.availableDates, startDate, endDate]);
+    setStartDate(null);
+    setEndDate(null);
+    setSelectedDate(null);
+    setDateFilterPanelId(null);
+  }, [panelId]);
 
   // Handle date dropdown change
   const handleDateChange = (e) => {
+    if (!e.target.value) {
+      setStartDate(null);
+      setEndDate(null);
+      setSelectedDate(null);
+      setDateFilterPanelId(null);
+      return;
+    }
+
     const selected = new Date(e.target.value);
     setSelectedDate(selected);
     const formattedDate = selected.toISOString().split("T")[0];
+    setDateFilterPanelId(panelId);
     
-    // Set a 5-day range starting from the selected date
+    // Set a forward-looking range starting from the selected date.
     setStartDate(formattedDate);
     const availableDates = dashboardData?.meta?.availableDates || [];
     const selectedIndex = availableDates.indexOf(formattedDate);
-    const endIndex = Math.min(selectedIndex + 4, availableDates.length - 1);
-    setEndDate(availableDates[endIndex]);
+    const endIndex = Math.min(selectedIndex + 5, availableDates.length - 1);
+    setEndDate(selectedIndex >= 0 ? availableDates[endIndex] : formattedDate);
   };
 
   // Get available dates from database (all dates, not just current range)
@@ -368,6 +360,7 @@ const Dashboard = () => {
               onChange={handleDateChange}
               className="bg-transparent border-none text-slate-900 dark:text-slate-100 font-semibold focus:outline-none cursor-pointer"
             >
+              <option value="">All stored history</option>
               {getAvailableDates().map((date) => (
                 <option key={date} value={date}>
                   {new Date(date).toLocaleDateString("en-US", {
