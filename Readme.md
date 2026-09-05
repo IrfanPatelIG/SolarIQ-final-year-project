@@ -1,5 +1,9 @@
 # ☀️ SolarIQ - Smart Solar Energy Forecasting & Insights Dashboard
 
+
+### Live: [View live](https://solariq-live.vercel.app/)
+---
+
 A smart solar energy prediction and monitoring system using machine learning to optimize solar panel performance and provide actionable insights.
 
 **Key Features:**
